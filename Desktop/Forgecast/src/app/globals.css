@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050505; /* Darker background */
+  --foreground: #ededed;
   --primary: #0052FF; /* Base Blue */
   --primary-foreground: #ffffff;
   --secondary: #855DCD; /* Farcaster Purple */
   --secondary-foreground: #ffffff;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --border: #e5e5e5;
-  --card: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #a3a3a3;
+  --border: #262626;
+  --card: #0a0a0a; /* Slightly lighter than bg for cards */
 }
 
 @theme inline {
@@ -28,7 +28,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #050505; /* Darker background */
+    --background: #050505;
     --foreground: #ededed;
     --primary: #0052FF;
     --primary-foreground: #ffffff;
@@ -37,7 +37,7 @@
     --muted: #1a1a1a;
     --muted-foreground: #a3a3a3;
     --border: #262626;
-    --card: #0a0a0a; /* Slightly lighter than bg for cards */
+    --card: #0a0a0a;
   }
 }
 

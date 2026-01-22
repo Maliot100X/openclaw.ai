@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, Plus, ArrowRight, Clock, Coins, User, Layers } from 'lucide-react';
+import { TrendingUp, Plus, ArrowRight, Clock, Coins, User, Layers, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -46,8 +46,16 @@ export default function HomePage() {
         <h1 className="text-2xl font-bold bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent">
           Forgecast
         </h1>
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <span className="text-xs font-bold text-primary">FC</span>
+        <div className="flex items-center space-x-3">
+          <button 
+            className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary relative"
+            title="Shop Coming Soon"
+          >
+            <ShoppingBag size={16} />
+          </button>
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-xs font-bold text-primary">FC</span>
+          </div>
         </div>
       </header>
 
@@ -142,21 +150,6 @@ export default function HomePage() {
             ))}
           </div>
         )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Link href="/launch" className="bg-card border border-border p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2 hover:border-primary/50 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <Plus size={20} />
-          </div>
-          <span className="font-medium text-sm">New Launch</span>
-        </Link>
-        <Link href="/profile" className="bg-card border border-border p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2 hover:border-primary/50 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
-            <TrendingUp size={20} />
-          </div>
-          <span className="font-medium text-sm">Portfolio</span>
-        </Link>
       </div>
     </div>
   );

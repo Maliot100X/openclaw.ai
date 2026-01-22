@@ -197,13 +197,16 @@ export default function ProfilePage() {
           <div className="space-y-3">
              <p className="text-sm text-muted-foreground">Connect to view assets</p>
              <div className="flex flex-col gap-2">
-              {connectors.map((connector) => (
+              {connectors
+                .filter(c => ['Farcaster', 'Coinbase Wallet', 'MetaMask'].some(name => c.name.includes(name)))
+                .map((connector) => (
                 <button
                   key={connector.uid}
                   onClick={() => connect({ connector })}
-                  className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/5 hover:bg-secondary/10 rounded-lg transition-colors border border-border"
                 >
-                  Connect {connector.name}
+                  <span className="text-sm font-medium">{connector.name}</span>
+                  <div className="w-2 h-2 rounded-full bg-secondary/50"></div>
                 </button>
               ))}
             </div>

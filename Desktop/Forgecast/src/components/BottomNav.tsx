@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Rocket, User, MoreHorizontal } from 'lucide-react';
+import { Home, Rocket, User, MoreHorizontal, ShoppingBag } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems = [
   { href: '/home', label: 'Home', icon: Home },
+  { href: '/shop', label: 'Shop', icon: ShoppingBag },
   { href: '/launch', label: 'Launch', icon: Rocket },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/more', label: 'More', icon: MoreHorizontal },
