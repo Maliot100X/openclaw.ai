@@ -1,0 +1,17 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQ...PLACEHOLDER",
+    "payload": "eyJkb...PLACEHOLDER",
+    "signature": "MHhm...PLACEHOLDER"
+  },
+  "frame": {
+    "version": "1",
+    "name": "Forgecast",
+    "iconUrl": "https://forgecast.app/icon.png",
+    "homeUrl": "https://forgecast.app",
+    "description": "Launch and discover coins on Base",
+    "splashImageUrl": "https://forgecast.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "webhookUrl": "https://forgecast.app/api/webhook"
+  }
+}
