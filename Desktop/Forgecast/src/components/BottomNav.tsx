@@ -13,7 +13,7 @@ const navItems = [
   { href: '/more', label: 'More', icon: MoreHorizontal },
 ];
 
-export function BottomNav() {
+export default function BottomNav() {
   const pathname = usePathname();
 
   return (

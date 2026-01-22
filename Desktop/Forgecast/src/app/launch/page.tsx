@@ -26,11 +26,9 @@ export default function LaunchPage() {
     e.preventDefault();
     if (validate()) {
       setIsSubmitting(true);
-      // Simulation of submission
-      setTimeout(() => {
-        setIsSubmitting(false);
-        alert(`Launch sequence initiated for ${formData.name} ($${formData.ticker})! \n(This is a Phase 4 simulation)`);
-      }, 1500);
+      // Phase 6: Connect to Real Transaction
+      console.log("Submitting transaction...", formData);
+      // Placeholder for actual writeContract call
     }
   };
 

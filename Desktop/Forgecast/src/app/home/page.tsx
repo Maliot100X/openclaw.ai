@@ -47,12 +47,6 @@ export default function HomePage() {
           Forgecast
         </h1>
         <div className="flex items-center space-x-3">
-          <button 
-            className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary relative"
-            title="Shop Coming Soon"
-          >
-            <ShoppingBag size={16} />
-          </button>
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-xs font-bold text-primary">FC</span>
           </div>
