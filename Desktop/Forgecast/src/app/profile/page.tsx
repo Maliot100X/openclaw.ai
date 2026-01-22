@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { Layers, Wallet, RefreshCw, MessageSquare, LogOut } from 'lucide-react';
+import AIChat from '@/components/AIChat';
 
 // PAYMENT LAYER PREP
 const SIGN_IN_FEE = 0.20; // USD
@@ -277,14 +278,10 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* AI Chat Placeholder */}
-      <div className="bg-gradient-to-r from-purple-900/10 to-blue-900/10 border border-dashed border-primary/30 rounded-xl p-6 text-center space-y-2">
-        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
-          <MessageSquare size={24} />
+      {/* AI Chat Integration */}
+        <div className="mt-6">
+          <AIChat />
         </div>
-        <h3 className="font-semibold text-sm">AI Agent</h3>
-        <p className="text-xs text-muted-foreground">Chat with your onchain agent coming in Phase 4.</p>
-      </div>
     </div>
   );
 }

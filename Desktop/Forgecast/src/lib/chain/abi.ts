@@ -10,5 +10,18 @@ export const ZORA_FACTORY_ABI = [
     ],
     "name": "CoinCreated",
     "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "symbol", "type": "string" },
+      { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }
+    ],
+    "name": "deploy",
+    "outputs": [
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
-]
+] as const;
