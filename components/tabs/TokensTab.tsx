@@ -1,19 +1,22 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { Search, Coins, Sparkles, TrendingUp, Loader2, AlertCircle } from 'lucide-react'
+import { Search, Coins, Sparkles, TrendingUp, Loader2, AlertCircle, Flame, Clock } from 'lucide-react'
 import CoinCard from '@/components/ui/CoinCard'
 import type { Token, TokenSubTab } from '@/types'
 
-const subTabs: { id: TokenSubTab; label: string; icon: typeof Coins }[] = [
-  { id: 'base', label: 'Base', icon: Coins },
-  { id: 'zora', label: 'Zora', icon: Sparkles },
-  { id: 'trending', label: 'Trending', icon: TrendingUp },
+type MiniTab = 'new' | 'trending'
+
+const subTabs: { id: TokenSubTab; label: string; icon: typeof Coins; hasMiniTabs: boolean }[] = [
+  { id: 'base', label: 'Base', icon: Coins, hasMiniTabs: true },
+  { id: 'zora', label: 'Zora', icon: Sparkles, hasMiniTabs: true },
+  { id: 'trending', label: 'Trending', icon: TrendingUp, hasMiniTabs: false },
 ]
 
 export default function TokensTab() {
   const [activeSubTab, setActiveSubTab] = useState<TokenSubTab>('base')
+  const [activeMiniTab, setActiveMiniTab] = useState<MiniTab>('new')
   const [searchQuery, setSearchQuery] = useState('')
   const [tokens, setTokens] = useState<Token[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,14 +25,29 @@ export default function TokensTab() {
   const [searchResult, setSearchResult] = useState<Token | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  // Fetch tokens based on active tab
+  // Check if current main tab has mini tabs
+  const currentTabConfig = subTabs.find(t => t.id === activeSubTab)
+  const showMiniTabs = currentTabConfig?.hasMiniTabs || false
+
+  // Fetch tokens based on active tab and mini tab
   useEffect(() => {
     async function fetchTokens() {
       setLoading(true)
       setError(null)
       
       try {
-        const res = await fetch(`/api/tokens?chain=${activeSubTab}`)
+        // Build the API URL based on current selection
+        let apiUrl = '/api/tokens?'
+        
+        if (activeSubTab === 'trending') {
+          // Trending tab shows trending from both chains
+          apiUrl += 'chain=trending'
+        } else {
+          // Base or Zora with mini tab selection
+          apiUrl += `chain=${activeSubTab}&filter=${activeMiniTab}`
+        }
+        
+        const res = await fetch(apiUrl)
         const data = await res.json()
         
         if (data.success) {
@@ -46,7 +64,11 @@ export default function TokensTab() {
     }
     
     fetchTokens()
-  }, [activeSubTab])
+    
+    // Auto-refresh every 60 seconds
+    const interval = setInterval(fetchTokens, 60000)
+    return () => clearInterval(interval)
+  }, [activeSubTab, activeMiniTab])
 
   // Search by contract address
   const handleSearch = async () => {
@@ -65,13 +87,26 @@ export default function TokensTab() {
     setSearchResult(null)
     
     try {
-      const res = await fetch(`/api/tokens/search?address=${searchQuery}&chain=${activeSubTab}`)
+      // Try both chains if on trending tab
+      const chainToSearch = activeSubTab === 'trending' ? 'base' : activeSubTab
+      const res = await fetch(`/api/tokens/search?address=${searchQuery}&chain=${chainToSearch}`)
       const data = await res.json()
       
       if (data.success && data.token) {
         setSearchResult(data.token)
       } else {
-        setSearchError(data.error || 'Token not found')
+        // If not found on first chain and we're on trending, try the other
+        if (activeSubTab === 'trending') {
+          const res2 = await fetch(`/api/tokens/search?address=${searchQuery}&chain=zora`)
+          const data2 = await res2.json()
+          if (data2.success && data2.token) {
+            setSearchResult(data2.token)
+          } else {
+            setSearchError('Token not found on Base or Zora')
+          }
+        } else {
+          setSearchError(data.error || 'Token not found')
+        }
       }
     } catch (err) {
       console.error('Search error:', err)
@@ -102,7 +137,7 @@ export default function TokensTab() {
         <h1 className="text-2xl font-bold">ClawWarTokens</h1>
       </div>
 
-      {/* Sub-tabs */}
+      {/* Main Sub-tabs */}
       <div className="flex gap-2 bg-claw-dark/50 p-1 rounded-xl">
         {subTabs.map((tab) => {
           const Icon = tab.icon
@@ -112,6 +147,7 @@ export default function TokensTab() {
               key={tab.id}
               onClick={() => {
                 setActiveSubTab(tab.id)
+                setActiveMiniTab('new') // Reset mini tab when switching
                 setSearchResult(null)
                 setSearchError(null)
               }}
@@ -128,6 +164,41 @@ export default function TokensTab() {
         })}
       </div>
 
+      {/* Mini Sub-tabs (only for Base and Zora) */}
+      <AnimatePresence mode="wait">
+        {showMiniTabs && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex gap-2"
+          >
+            <button
+              onClick={() => setActiveMiniTab('new')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all border ${
+                activeMiniTab === 'new'
+                  ? 'border-claw-accent bg-claw-accent/20 text-claw-accent'
+                  : 'border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              <Clock size={16} />
+              <span>New</span>
+            </button>
+            <button
+              onClick={() => setActiveMiniTab('trending')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all border ${
+                activeMiniTab === 'trending'
+                  ? 'border-orange-500 bg-orange-500/20 text-orange-400'
+                  : 'border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+              }`}
+            >
+              <Flame size={16} />
+              <span>Trending</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Search */}
       <div className="space-y-2">
         <div className="relative flex gap-2">
@@ -143,13 +214,13 @@ export default function TokensTab() {
                 if (!e.target.value) setSearchResult(null)
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-12 pr-4 py-3 bg-claw-dark/50 border border-white/10 rounded-xl focus:outline-none focus:border-claw-primary transition-colors"
+              className="w-full pl-12 pr-4 py-3 bg-claw-dark/50 rounded-xl border border-white/10 focus:border-claw-primary focus:outline-none transition-colors"
             />
           </div>
           <button
             onClick={handleSearch}
             disabled={searching || !searchQuery.trim()}
-            className="px-4 py-3 bg-claw-primary rounded-xl hover:bg-claw-primary/80 transition-colors disabled:opacity-50"
+            className="px-4 py-3 bg-claw-primary rounded-xl font-medium hover:bg-claw-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {searching ? <Loader2 size={20} className="animate-spin" /> : 'Search'}
           </button>
@@ -165,71 +236,69 @@ export default function TokensTab() {
 
       {/* Search Result */}
       {searchResult && (
-        <div className="space-y-2">
-          <p className="text-sm text-gray-400">Search Result:</p>
-          <CoinCard token={searchResult} index={0} showBoostButton={true} />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="border-2 border-claw-primary rounded-xl p-1"
+        >
+          <div className="text-xs text-claw-primary px-3 py-1 font-medium">🔍 Search Result</div>
+          <CoinCard 
+            token={searchResult} 
+            showBoostButton={true}
+            showBuySell={true}
+            showBoostPrices={true}
+          />
+        </motion.div>
       )}
 
-      {/* Info Banner */}
-      <div className="card bg-gradient-to-r from-claw-primary/20 to-claw-secondary/20 border-claw-primary/30">
-        <p className="text-sm">
-          <span className="font-semibold">💡 Tip:</span> Boost any coin to the ClawKing Spotlight!
-          Paste a contract address to find any token.
-        </p>
+      {/* Current Tab Label */}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-400">
+          {activeSubTab === 'trending' 
+            ? '🔥 Trending on Base & Zora'
+            : `${showMiniTabs ? (activeMiniTab === 'new' ? '🆕 New' : '🔥 Trending') : ''} on ${activeSubTab.charAt(0).toUpperCase() + activeSubTab.slice(1)}`
+          }
+        </span>
+        {!loading && (
+          <span className="text-gray-500">{filteredTokens.length} tokens</span>
+        )}
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-claw-primary" />
+      {/* Token List */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <Loader2 className="animate-spin text-claw-primary" size={32} />
+          <p className="text-gray-400">Loading real token data...</p>
         </div>
-      )}
-
-      {/* Error State */}
-      {error && !loading && (
-        <div className="card bg-red-500/10 border-red-500/30 text-center py-8">
-          <AlertCircle size={32} className="mx-auto text-red-400 mb-2" />
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <AlertCircle className="text-red-400" size={32} />
           <p className="text-red-400">{error}</p>
-          <button
+          <button 
             onClick={() => window.location.reload()}
-            className="mt-3 text-sm text-claw-primary hover:underline"
+            className="text-sm text-claw-primary hover:underline"
           >
             Try again
           </button>
         </div>
-      )}
-
-      {/* Coin List */}
-      {!loading && !error && (
-        <div className="space-y-3">
-          {filteredTokens.length > 0 ? (
-            filteredTokens.map((token, index) => (
-              <CoinCard
-                key={token.id || token.address}
-                token={token}
-                index={index}
-                showBoostButton={true}
-              />
-            ))
-          ) : (
-            <div className="card text-center py-8">
-              <p className="text-gray-400">No tokens found</p>
-              {searchQuery && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Try pasting a contract address to search
-                </p>
-              )}
-            </div>
-          )}
+      ) : filteredTokens.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <Coins className="text-gray-500" size={32} />
+          <p className="text-gray-400">No tokens found</p>
         </div>
-      )}
-
-      {/* Live Data Notice */}
-      {!loading && tokens.length > 0 && (
-        <p className="text-xs text-gray-500 text-center">
-          📊 Live data from GeckoTerminal • Updates every 60s
-        </p>
+      ) : (
+        <div className="space-y-3">
+          {filteredTokens.map((token, index) => (
+            <CoinCard
+              key={`${token.address}-${token.chain}`}
+              token={token}
+              index={index}
+              showBoostButton={true}
+              showBuySell={true}
+              showBoostPrices={true}
+            />
+          ))}
+        </div>
       )}
     </motion.div>
   )
