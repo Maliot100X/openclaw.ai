@@ -13,8 +13,8 @@ interface SwapModalProps {
     name: string
     symbol: string
     chain: string
-    price: number
-    imageUrl?: string
+    price?: number | null  // Made optional to accept Token type
+    imageUrl?: string | null
   }
   mode: 'buy' | 'sell'
 }
@@ -26,6 +26,9 @@ export default function SwapModal({ isOpen, onClose, token, mode }: SwapModalPro
   const [errorMessage, setErrorMessage] = useState('')
   const [walletConnected, setWalletConnected] = useState(false)
   const [userAddress, setUserAddress] = useState('')
+
+  // Safe price with fallback
+  const tokenPrice = token.price || 0
 
   // Check if wallet is connected (Farcaster or MetaMask)
   useEffect(() => {
@@ -62,8 +65,8 @@ export default function SwapModal({ isOpen, onClose, token, mode }: SwapModalPro
   
   const estimatedOutput = amount ? (
     mode === 'buy' 
-      ? (parseFloat(amount) / (token.price || 0.0001)).toFixed(4)
-      : (parseFloat(amount) * (token.price || 0)).toFixed(6)
+      ? (parseFloat(amount) / (tokenPrice || 0.0001)).toFixed(4)
+      : (parseFloat(amount) * tokenPrice).toFixed(6)
   ) : '0'
 
   const handleConnectWallet = async () => {
@@ -213,7 +216,7 @@ export default function SwapModal({ isOpen, onClose, token, mode }: SwapModalPro
             <div>
               <p className="font-bold">{token.name}</p>
               <p className="text-sm text-gray-400">
-                ${token.price?.toFixed(6) || '0.00'} • {token.chain.toUpperCase()}
+                ${tokenPrice.toFixed(6)} • {token.chain.toUpperCase()}
               </p>
             </div>
           </div>

@@ -57,6 +57,16 @@ export default function CoinCard({
 
   const selectedTierData = getBoostTier(selectedTier)
 
+  // Prepare token data for modals (handle optional fields)
+  const modalToken = {
+    address: token.address,
+    name: token.name,
+    symbol: token.symbol,
+    chain: token.chain,
+    price: token.price ?? 0,
+    imageUrl: token.imageUrl || null,
+  }
+
   return (
     <>
       <motion.div
@@ -209,7 +219,7 @@ export default function CoinCard({
       <SwapModal
         isOpen={showSwapModal}
         onClose={() => setShowSwapModal(false)}
-        token={token}
+        token={modalToken}
         mode={swapMode}
       />
 
@@ -217,13 +227,7 @@ export default function CoinCard({
       <BoostPaymentModal
         isOpen={showBoostModal}
         onClose={() => setShowBoostModal(false)}
-        token={{
-          address: token.address,
-          name: token.name,
-          symbol: token.symbol,
-          chain: token.chain,
-          imageUrl: token.imageUrl || null,
-        }}
+        token={modalToken}
         tier={selectedTier}
         price={selectedTierData.price}
         onSuccess={() => {
