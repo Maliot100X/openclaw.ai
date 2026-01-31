@@ -14,6 +14,9 @@ const CRAB_MESSAGES = [
   '🦀 ClawKing time!',
   '💎 HODL strong!',
   '📈 Moon soon?',
+  '🦀 Hey! Welcome!',
+  '💪 Boost now!',
+  '🌟 Shine bright!',
 ]
 
 export default function WalkingCrab() {
@@ -43,11 +46,11 @@ export default function WalkingCrab() {
       // Hide after walking across
       setTimeout(() => {
         setIsVisible(false)
-      }, 10000) // 10 seconds to walk across
+      }, 12000) // 12 seconds to walk across
     }
 
-    // Initial show after 10 seconds (faster for demo)
-    const initialTimer = setTimeout(showCrab, 10000)
+    // Initial show after 5 seconds for testing (user can see it quickly)
+    const initialTimer = setTimeout(showCrab, 5000)
     
     // Then every 5 minutes
     const interval = setInterval(showCrab, 5 * 60 * 1000)
@@ -65,19 +68,19 @@ export default function WalkingCrab() {
       <motion.div
         key="walking-crab"
         initial={{ 
-          x: startFromLeft ? -120 : '100vw',
+          x: startFromLeft ? -150 : '100vw',
           opacity: 1
         }}
         animate={{ 
-          x: startFromLeft ? '100vw' : -120,
+          x: startFromLeft ? '100vw' : -150,
         }}
         exit={{ opacity: 0 }}
         transition={{ 
-          duration: 10,
+          duration: 12,
           ease: 'linear'
         }}
-        className="fixed z-[100] pointer-events-none"
-        style={{ bottom: 100 }}
+        className="fixed z-[9999] pointer-events-none"
+        style={{ bottom: 120 }}
       >
         <div className="relative">
           {/* Speech bubble */}
@@ -85,27 +88,31 @@ export default function WalkingCrab() {
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
           >
-            <div className="bg-gradient-to-r from-claw-primary to-claw-secondary px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-claw-primary/50">
+            <div className="bg-gradient-to-r from-claw-primary to-claw-secondary px-5 py-2.5 rounded-full text-base font-bold shadow-xl shadow-claw-primary/50 border border-white/20">
               {message}
             </div>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-claw-primary rotate-45" />
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-claw-primary rotate-45" />
           </motion.div>
           
           {/* Crab emoji with walking animation */}
           <motion.div
             animate={{ 
-              rotate: [0, -8, 0, 8, 0],
-              y: [0, -5, 0, -5, 0]
+              rotate: [0, -10, 0, 10, 0],
+              y: [0, -8, 0, -8, 0]
             }}
             transition={{ 
-              duration: 0.4,
+              duration: 0.35,
               repeat: Infinity,
               ease: 'easeInOut'
             }}
-            className="text-6xl drop-shadow-lg"
-            style={{ transform: startFromLeft ? 'scaleX(1)' : 'scaleX(-1)' }}
+            className="drop-shadow-2xl filter"
+            style={{ 
+              fontSize: '80px',
+              transform: startFromLeft ? 'scaleX(1)' : 'scaleX(-1)',
+              textShadow: '0 4px 20px rgba(255, 120, 50, 0.5)'
+            }}
           >
             🦀
           </motion.div>
