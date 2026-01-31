@@ -1,118 +1,97 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Flame, TrendingUp, Crown, Zap, Clock } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Flame, TrendingUp, Crown, Zap, Clock, Loader2, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import CoinCard from '@/components/ui/CoinCard'
-import type { Token, Boost } from '@/types'
+import type { Token } from '@/types'
 
-// Mock data for demo - will be replaced with real API data
-const mockBoostedCoins: (Boost & { token: Token })[] = [
-  {
-    id: '1',
-    tokenId: 't1',
-    token: {
-      id: 't1',
-      address: '0x1234...5678',
-      name: 'Based AI',
-      symbol: 'BAI',
-      chain: 'base',
-      imageUrl: 'https://via.placeholder.com/100/FF6B35/fff?text=BAI',
-      price: 0.0042,
-      priceChange24h: 15.5,
-      verified: true,
-    },
-    userId: 'u1',
-    user: { id: 'u1', fid: 123, username: 'whale', displayName: 'Whale', pfpUrl: '', wallets: [], createdAt: '', updatedAt: '' },
-    tier: 3,
-    price: 6,
-    durationMinutes: 60,
-    startTime: new Date().toISOString(),
-    endTime: new Date(Date.now() + 45 * 60000).toISOString(),
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    tokenId: 't2',
-    token: {
-      id: 't2',
-      address: '0x2345...6789',
-      name: 'Claw Token',
-      symbol: 'CLAW',
-      chain: 'base',
-      imageUrl: 'https://via.placeholder.com/100/7C3AED/fff?text=CLAW',
-      price: 0.00089,
-      priceChange24h: 8.2,
-      verified: true,
-    },
-    userId: 'u2',
-    user: { id: 'u2', fid: 456, username: 'degen', displayName: 'Degen', pfpUrl: '', wallets: [], createdAt: '', updatedAt: '' },
-    tier: 2,
-    price: 3,
-    durationMinutes: 25,
-    startTime: new Date().toISOString(),
-    endTime: new Date(Date.now() + 15 * 60000).toISOString(),
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-]
-
-const mockTrendingCoins: Token[] = [
-  {
-    id: 't3',
-    address: '0x3456...789a',
-    name: 'Zora Meme',
-    symbol: 'ZMEME',
-    chain: 'zora',
-    imageUrl: 'https://via.placeholder.com/100/5B21B6/fff?text=ZMEME',
-    price: 0.00012,
-    priceChange24h: 42.5,
-    volume24h: 125000,
-    verified: true,
-  },
-  {
-    id: 't4',
-    address: '0x4567...89ab',
-    name: 'Based Dog',
-    symbol: 'BDOG',
-    chain: 'base',
-    imageUrl: 'https://via.placeholder.com/100/0052FF/fff?text=BDOG',
-    price: 0.0025,
-    priceChange24h: -5.2,
-    volume24h: 89000,
-    verified: true,
-  },
-  {
-    id: 't5',
-    address: '0x5678...9abc',
-    name: 'Clanker AI',
-    symbol: 'CLNK',
-    chain: 'base',
-    imageUrl: 'https://via.placeholder.com/100/00D9FF/fff?text=CLNK',
-    price: 0.0078,
-    priceChange24h: 22.1,
-    volume24h: 234000,
-    verified: true,
-  },
-]
+interface ActiveBoost {
+  id: string
+  tier: number
+  price: number
+  durationMinutes: number
+  startTime: string
+  endTime: string
+  token: {
+    id: string
+    address: string
+    name: string
+    symbol: string
+    chain: string
+    imageUrl: string
+  }
+  user: {
+    fid: number
+    username: string
+    pfpUrl: string
+  }
+}
 
 export default function HomeTab() {
+  const [boostedCoins, setBoostedCoins] = useState<ActiveBoost[]>([])
+  const [trendingCoins, setTrendingCoins] = useState<Token[]>([])
+  const [loadingBoosts, setLoadingBoosts] = useState(true)
+  const [loadingTrending, setLoadingTrending] = useState(true)
   const [timeLeft, setTimeLeft] = useState<{ [key: string]: number }>({})
+
+  // Fetch active boosts from Supabase
+  const fetchBoosts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/boosts?limit=5')
+      const data = await res.json()
+      if (data.success) {
+        setBoostedCoins(data.boosts || [])
+      }
+    } catch (err) {
+      console.error('Error fetching boosts:', err)
+    } finally {
+      setLoadingBoosts(false)
+    }
+  }, [])
+
+  // Fetch trending tokens from GeckoTerminal
+  const fetchTrending = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tokens?chain=trending')
+      const data = await res.json()
+      if (data.success) {
+        setTrendingCoins(data.tokens || [])
+      }
+    } catch (err) {
+      console.error('Error fetching trending:', err)
+    } finally {
+      setLoadingTrending(false)
+    }
+  }, [])
+
+  // Initial fetch
+  useEffect(() => {
+    fetchBoosts()
+    fetchTrending()
+  }, [fetchBoosts, fetchTrending])
 
   // Update countdown timers
   useEffect(() => {
     const interval = setInterval(() => {
       const newTimeLeft: { [key: string]: number } = {}
-      mockBoostedCoins.forEach((boost) => {
+      boostedCoins.forEach((boost) => {
         const remaining = Math.max(0, new Date(boost.endTime).getTime() - Date.now())
         newTimeLeft[boost.id] = remaining
       })
       setTimeLeft(newTimeLeft)
+
+      // Check for expired boosts and refresh
+      const hasExpired = boostedCoins.some(boost => 
+        new Date(boost.endTime).getTime() < Date.now()
+      )
+      if (hasExpired) {
+        fetchBoosts()
+      }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [boostedCoins, fetchBoosts])
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -143,6 +122,13 @@ export default function HomeTab() {
     }
   }
 
+  const handleRefresh = () => {
+    setLoadingBoosts(true)
+    setLoadingTrending(true)
+    fetchBoosts()
+    fetchTrending()
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -158,14 +144,26 @@ export default function HomeTab() {
 
       {/* ClawKing Spotlight - Boosted Coins */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Flame className="text-claw-primary" size={24} />
-          <h2 className="text-xl font-bold">ClawKing Spotlight</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Flame className="text-claw-primary" size={24} />
+            <h2 className="text-xl font-bold">ClawKing Spotlight</h2>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+          >
+            <RefreshCw size={18} className={loadingBoosts ? 'animate-spin' : ''} />
+          </button>
         </div>
 
-        {mockBoostedCoins.length > 0 ? (
+        {loadingBoosts ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-claw-primary" />
+          </div>
+        ) : boostedCoins.length > 0 ? (
           <div className="space-y-3">
-            {mockBoostedCoins.map((boost, index) => (
+            {boostedCoins.map((boost, index) => (
               <motion.div
                 key={boost.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -181,7 +179,10 @@ export default function HomeTab() {
                       <img
                         src={boost.token.imageUrl}
                         alt={boost.token.name}
-                        className="w-12 h-12 rounded-full"
+                        className="w-12 h-12 rounded-full bg-claw-dark"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${boost.token.address}`
+                        }}
                       />
                       {boost.tier === 3 && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -194,12 +195,14 @@ export default function HomeTab() {
                         <span className="font-bold">{boost.token.name}</span>
                         {getTierBadge(boost.tier)}
                       </div>
-                      <p className="text-gray-400 text-sm">${boost.token.symbol}</p>
+                      <p className="text-gray-400 text-sm">
+                        ${boost.token.symbol} • {boost.token.chain}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-lg">${boost.token.price?.toFixed(6)}</p>
-                    <div className="flex items-center gap-1 text-sm text-gray-400">
+                    <p className="text-sm text-gray-400">by @{boost.user.username}</p>
+                    <div className="flex items-center gap-1 text-sm text-claw-primary font-mono">
                       <Clock size={14} />
                       <span>{formatTime(timeLeft[boost.id] || 0)}</span>
                     </div>
@@ -209,9 +212,10 @@ export default function HomeTab() {
             ))}
           </div>
         ) : (
-          <div className="card text-center py-8">
-            <p className="text-gray-400">No boosted coins right now</p>
-            <p className="text-sm text-gray-500 mt-1">Be the first to boost!</p>
+          <div className="card text-center py-8 bg-gradient-to-r from-claw-primary/10 to-claw-secondary/10">
+            <Flame size={40} className="mx-auto text-claw-primary mb-3" />
+            <p className="text-gray-300 font-medium">No boosted coins right now</p>
+            <p className="text-sm text-gray-500 mt-1">Be the first to boost and get featured! 🚀</p>
           </div>
         )}
       </section>
@@ -221,13 +225,35 @@ export default function HomeTab() {
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="text-green-500" size={24} />
           <h2 className="text-xl font-bold">Trending</h2>
+          <span className="text-xs text-gray-500 ml-2">📊 Live from GeckoTerminal</span>
         </div>
 
-        <div className="space-y-3">
-          {mockTrendingCoins.map((token, index) => (
-            <CoinCard key={token.id} token={token} index={index} />
-          ))}
-        </div>
+        {loadingTrending ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-green-500" />
+          </div>
+        ) : trendingCoins.length > 0 ? (
+          <div className="space-y-3">
+            {trendingCoins.slice(0, 5).map((token, index) => (
+              <CoinCard 
+                key={token.id || token.address} 
+                token={token} 
+                index={index}
+                showBoostButton={true}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="card text-center py-8">
+            <p className="text-gray-400">Unable to load trending tokens</p>
+            <button
+              onClick={fetchTrending}
+              className="mt-2 text-sm text-claw-primary hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
       </section>
     </motion.div>
   )
