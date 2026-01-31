@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Bot, TrendingUp, Sparkles, Loader2, ChevronDown } from 'lucide-react'
+import { X, Send, Bot, TrendingUp, Sparkles, Loader2, ChevronDown, Settings } from 'lucide-react'
 import type { BotMessage, BotMode } from '@/types'
 
 interface BotPopupProps {
@@ -10,25 +10,57 @@ interface BotPopupProps {
   onClose: () => void
 }
 
-const botModes: { id: BotMode; name: string; icon: typeof Bot; description: string }[] = [
-  { id: 'openclaw', name: 'OpenClaw AI', icon: Sparkles, description: 'Crypto & Farcaster help' },
-  { id: 'market', name: 'Market Intel', icon: TrendingUp, description: 'Real-time market data' },
+const botModes: { id: BotMode; name: string; icon: typeof Bot; description: string; welcomeMessage: string }[] = [
+  { 
+    id: 'openclaw', 
+    name: 'OpenClaw AI', 
+    icon: Sparkles, 
+    description: 'Crypto & Farcaster help',
+    welcomeMessage: "Hey! 🦀 I'm OpenClaw AI, your crypto companion. Ask me about tokens, Farcaster, boosting, or anything else!"
+  },
+  { 
+    id: 'market', 
+    name: 'Market Intel', 
+    icon: TrendingUp, 
+    description: 'Real-time market data & signals',
+    welcomeMessage: "📊 Market Intel here! I can fetch real-time stock and crypto data via AlphaVantage. Try asking about $NVDA, $BTC, or any ticker!"
+  },
 ]
+
+// Initialize separate chat histories for each mode
+const initialChats: Record<BotMode, BotMessage[]> = {
+  openclaw: [
+    {
+      id: 'oc-1',
+      role: 'assistant',
+      content: botModes[0].welcomeMessage,
+      timestamp: new Date().toISOString(),
+    },
+  ],
+  market: [
+    {
+      id: 'mi-1',
+      role: 'assistant',
+      content: botModes[1].welcomeMessage,
+      timestamp: new Date().toISOString(),
+    },
+  ],
+}
 
 export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
   const [mode, setMode] = useState<BotMode>('openclaw')
   const [showModeSelector, setShowModeSelector] = useState(false)
-  const [messages, setMessages] = useState<BotMessage[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hey! 🦀 I'm OpenClaw AI, your crypto companion. Ask me about tokens, Farcaster, boosting, or anything else!",
-      timestamp: new Date().toISOString(),
-    },
-  ])
+  const [showSettings, setShowSettings] = useState(false)
+  
+  // SEPARATE chat histories for each mode
+  const [chatHistories, setChatHistories] = useState<Record<BotMode, BotMessage[]>>(initialChats)
+  
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Get current mode's messages
+  const messages = chatHistories[mode]
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -42,13 +74,18 @@ export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
     if (!input.trim() || isLoading) return
 
     const userMessage: BotMessage = {
-      id: Date.now().toString(),
+      id: `${mode}-${Date.now()}`,
       role: 'user',
       content: input.trim(),
       timestamp: new Date().toISOString(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    // Add message to current mode's history
+    setChatHistories(prev => ({
+      ...prev,
+      [mode]: [...prev[mode], userMessage]
+    }))
+    
     setInput('')
     setIsLoading(true)
 
@@ -59,29 +96,35 @@ export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
         body: JSON.stringify({
           message: userMessage.content,
           mode,
-          history: messages.slice(-10), // Last 10 messages for context
+          history: chatHistories[mode].slice(-10), // Last 10 messages of this mode
         }),
       })
 
       const data = await response.json()
 
       const botMessage: BotMessage = {
-        id: (Date.now() + 1).toString(),
+        id: `${mode}-${Date.now() + 1}`,
         role: 'assistant',
         content: data.response || "Sorry, I couldn't process that. Please try again!",
         provider: data.provider,
         timestamp: new Date().toISOString(),
       }
 
-      setMessages((prev) => [...prev, botMessage])
+      setChatHistories(prev => ({
+        ...prev,
+        [mode]: [...prev[mode], botMessage]
+      }))
     } catch (error) {
       const errorMessage: BotMessage = {
-        id: (Date.now() + 1).toString(),
+        id: `${mode}-${Date.now() + 1}`,
         role: 'assistant',
         content: "Oops! Something went wrong. Please try again in a moment.",
         timestamp: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, errorMessage])
+      setChatHistories(prev => ({
+        ...prev,
+        [mode]: [...prev[mode], errorMessage]
+      }))
     } finally {
       setIsLoading(false)
     }
@@ -117,62 +160,85 @@ export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed inset-4 md:inset-auto md:bottom-24 md:right-4 md:w-96 md:h-[500px] bg-claw-dark rounded-2xl z-50 flex flex-col shadow-2xl border border-white/10 overflow-hidden"
           >
-            {/* Header */}
-            <div className="p-4 border-b border-white/10">
-              <div className="flex items-center justify-between">
-                <div className="relative">
+            {/* Header with Mode Tabs */}
+            <div className="border-b border-white/10">
+              {/* Mode Tabs */}
+              <div className="flex">
+                {botModes.map((m) => {
+                  const Icon = m.icon
+                  const isActive = mode === m.id
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setMode(m.id)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 transition-all ${
+                        isActive 
+                          ? 'bg-claw-primary/20 border-b-2 border-claw-primary' 
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={18} className={isActive ? 'text-claw-primary' : 'text-gray-400'} />
+                      <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                        {m.name}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              
+              {/* Header Bar */}
+              <div className="flex items-center justify-between px-4 py-2">
+                <p className="text-xs text-gray-400">{currentMode.description}</p>
+                <div className="flex items-center gap-2">
+                  {mode === 'market' && (
+                    <button
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+                      title="Auto-posting settings"
+                    >
+                      <Settings size={16} className="text-gray-400" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => setShowModeSelector(!showModeSelector)}
-                    className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    onClick={onClose}
+                    className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                   >
-                    <CurrentIcon size={20} className="text-claw-primary" />
-                    <span className="font-medium">{currentMode.name}</span>
-                    <ChevronDown size={16} className={`transition-transform ${showModeSelector ? 'rotate-180' : ''}`} />
+                    <X size={18} />
                   </button>
-
-                  {/* Mode Selector Dropdown */}
-                  <AnimatePresence>
-                    {showModeSelector && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-2 w-64 bg-claw-darker rounded-xl border border-white/10 shadow-xl overflow-hidden z-10"
-                      >
-                        {botModes.map((m) => {
-                          const Icon = m.icon
-                          return (
-                            <button
-                              key={m.id}
-                              onClick={() => {
-                                setMode(m.id)
-                                setShowModeSelector(false)
-                              }}
-                              className={`w-full flex items-center gap-3 p-3 hover:bg-white/10 transition-colors ${
-                                mode === m.id ? 'bg-claw-primary/20' : ''
-                              }`}
-                            >
-                              <Icon size={20} className="text-claw-primary" />
-                              <div className="text-left">
-                                <p className="font-medium">{m.name}</p>
-                                <p className="text-xs text-gray-400">{m.description}</p>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
-
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-full hover:bg-white/10 transition-colors"
-                >
-                  <X size={20} />
-                </button>
               </div>
             </div>
+
+            {/* Market Intel Settings Panel */}
+            <AnimatePresence>
+              {showSettings && mode === 'market' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-b border-white/10 overflow-hidden"
+                >
+                  <div className="p-4 bg-claw-darker/50">
+                    <h4 className="text-sm font-medium mb-3">Auto-Post Settings</h4>
+                    <div className="space-y-2">
+                      <label className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">Post signals to Farcaster</span>
+                        <input type="checkbox" className="rounded" disabled />
+                      </label>
+                      <label className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">Post signals to Twitter</span>
+                        <input type="checkbox" className="rounded" disabled />
+                      </label>
+                      <label className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">Post signals to Telegram</span>
+                        <input type="checkbox" className="rounded" disabled />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Connect accounts in Profile tab first</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -223,7 +289,7 @@ export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={`Ask ${currentMode.name}...`}
+                  placeholder={mode === 'market' ? 'Ask about $NVDA, $BTC...' : `Ask ${currentMode.name}...`}
                   className="flex-1 px-4 py-3 bg-claw-darker border border-white/10 rounded-xl focus:outline-none focus:border-claw-primary transition-colors"
                   disabled={isLoading}
                 />
@@ -236,7 +302,7 @@ export default function BotPopup({ isOpen, onClose }: BotPopupProps) {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Powered by multi-AI fallback system
+                {mode === 'market' ? 'Powered by AlphaVantage + AI fallback' : 'Powered by multi-AI fallback system'}
               </p>
             </div>
           </motion.div>
