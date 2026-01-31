@@ -240,6 +240,8 @@ export default function HomeTab() {
                 token={token} 
                 index={index}
                 showBoostButton={true}
+                showBuySell={true}
+                showBoostPrices={true}
               />
             ))}
           </div>
