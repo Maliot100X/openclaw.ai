@@ -1,26 +1,34 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { Trophy, Medal, Crown, TrendingUp, Users } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Trophy, Medal, Crown, TrendingUp, Users, Loader2, Gift, DollarSign, Sparkles } from 'lucide-react'
 import type { LeaderboardPeriod, LeaderboardType } from '@/types'
 
-// Mock leaderboard data
-const mockCoinLeaderboard = [
-  { rank: 1, name: 'Based AI', symbol: 'BAI', chain: 'base', boostCount: 42, totalSpent: 156, image: 'https://via.placeholder.com/48/FF6B35/fff?text=1' },
-  { rank: 2, name: 'Claw Token', symbol: 'CLAW', chain: 'base', boostCount: 38, totalSpent: 132, image: 'https://via.placeholder.com/48/7C3AED/fff?text=2' },
-  { rank: 3, name: 'Zorb', symbol: 'ZORB', chain: 'zora', boostCount: 31, totalSpent: 98, image: 'https://via.placeholder.com/48/5B21B6/fff?text=3' },
-  { rank: 4, name: 'Brett', symbol: 'BRETT', chain: 'base', boostCount: 28, totalSpent: 87, image: 'https://via.placeholder.com/48/0052FF/fff?text=4' },
-  { rank: 5, name: 'Degen', symbol: 'DEGEN', chain: 'base', boostCount: 25, totalSpent: 76, image: 'https://via.placeholder.com/48/00D9FF/fff?text=5' },
-]
+interface CoinLeaderboardItem {
+  rank: number
+  name: string
+  symbol: string
+  chain: string
+  image: string
+  boostCount: number
+  totalSpent: number
+}
 
-const mockBuyerLeaderboard = [
-  { rank: 1, username: 'whale.eth', fid: 123, boostsBought: 89, totalSpent: 534, pfp: 'https://via.placeholder.com/48/FF6B35/fff?text=W' },
-  { rank: 2, username: 'degen_king', fid: 456, boostsBought: 67, totalSpent: 402, pfp: 'https://via.placeholder.com/48/7C3AED/fff?text=D' },
-  { rank: 3, username: 'based_chad', fid: 789, boostsBought: 54, totalSpent: 324, pfp: 'https://via.placeholder.com/48/0052FF/fff?text=B' },
-  { rank: 4, username: 'claw_hunter', fid: 101, boostsBought: 42, totalSpent: 252, pfp: 'https://via.placeholder.com/48/5B21B6/fff?text=C' },
-  { rank: 5, username: 'zora_fan', fid: 202, boostsBought: 38, totalSpent: 228, pfp: 'https://via.placeholder.com/48/00D9FF/fff?text=Z' },
-]
+interface BuyerLeaderboardItem {
+  rank: number
+  username: string
+  fid: number
+  pfp: string
+  boostsBought: number
+  totalSpent: number
+}
+
+interface Prizes {
+  first: { amount: number; currency: string; description: string }
+  second: { amount: number; currency: string; description: string }
+  third: { amount: number; currency: string; description: string }
+}
 
 const periods: { id: LeaderboardPeriod; label: string }[] = [
   { id: '24h', label: '24h' },
@@ -36,6 +44,38 @@ const types: { id: LeaderboardType; label: string; icon: typeof Trophy }[] = [
 export default function LeaderboardTab() {
   const [activeType, setActiveType] = useState<LeaderboardType>('boosted_coins')
   const [activePeriod, setActivePeriod] = useState<LeaderboardPeriod>('24h')
+  const [coinLeaderboard, setCoinLeaderboard] = useState<CoinLeaderboardItem[]>([])
+  const [buyerLeaderboard, setBuyerLeaderboard] = useState<BuyerLeaderboardItem[]>([])
+  const [prizes, setPrizes] = useState<Prizes | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState<string | null>(null)
+
+  // Fetch leaderboard data
+  const fetchLeaderboard = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/leaderboard?type=${activeType}&period=${activePeriod}`)
+      const data = await res.json()
+      
+      if (data.success) {
+        if (activeType === 'boosted_coins') {
+          setCoinLeaderboard(data.leaderboard || [])
+        } else {
+          setBuyerLeaderboard(data.leaderboard || [])
+        }
+        setPrizes(data.prizes)
+        setMessage(data.message || null)
+      }
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [activeType, activePeriod])
+
+  useEffect(() => {
+    fetchLeaderboard()
+  }, [fetchLeaderboard])
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -63,6 +103,32 @@ export default function LeaderboardTab() {
     }
   }
 
+  const getPrizeDisplay = (rank: number) => {
+    if (!prizes) return null
+    switch (rank) {
+      case 1:
+        return (
+          <span className="flex items-center gap-1 text-yellow-400 text-xs font-bold">
+            <DollarSign size={12} /> {prizes.first.description}
+          </span>
+        )
+      case 2:
+        return (
+          <span className="flex items-center gap-1 text-gray-300 text-xs font-bold">
+            <DollarSign size={12} /> {prizes.second.description}
+          </span>
+        )
+      case 3:
+        return (
+          <span className="flex items-center gap-1 text-amber-500 text-xs">
+            <Gift size={12} /> {prizes.third.description}
+          </span>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -75,6 +141,33 @@ export default function LeaderboardTab() {
         <Trophy className="text-yellow-400" size={28} />
         <h1 className="text-2xl font-bold">Leaderboard</h1>
       </div>
+
+      {/* Prize Banner */}
+      {prizes && (
+        <div className="card bg-gradient-to-r from-yellow-500/20 via-claw-primary/20 to-amber-500/20 border-yellow-500/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="text-yellow-400" size={20} />
+            <span className="font-bold text-yellow-400">Weekly Prizes!</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div>
+              <div className="text-yellow-400 font-bold">🥇 1st</div>
+              <div className="text-white">{prizes.first.description}</div>
+            </div>
+            <div>
+              <div className="text-gray-300 font-bold">🥈 2nd</div>
+              <div className="text-white">{prizes.second.description}</div>
+            </div>
+            <div>
+              <div className="text-amber-500 font-bold">🥉 3rd</div>
+              <div className="text-white">{prizes.third.description}</div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Prizes sent to winner's connected wallet every Monday!
+          </p>
+        </div>
+      )}
 
       {/* Type Toggle */}
       <div className="flex gap-2 bg-claw-dark/50 p-1 rounded-xl">
@@ -115,81 +208,114 @@ export default function LeaderboardTab() {
         ))}
       </div>
 
-      {/* Leaderboard List */}
-      <div className="space-y-3">
-        {activeType === 'boosted_coins' ? (
-          mockCoinLeaderboard.map((item, index) => (
-            <motion.div
-              key={item.rank}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`card ${getRankBg(item.rank)}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 flex justify-center">
-                  {getRankIcon(item.rank)}
-                </div>
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-10 h-10 rounded-full"
-                />
-                <div className="flex-1">
-                  <p className="font-bold">{item.name}</p>
-                  <p className="text-sm text-gray-400">${item.symbol} • {item.chain}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-claw-primary">{item.boostCount} boosts</p>
-                  <p className="text-sm text-gray-400">${item.totalSpent} spent</p>
-                </div>
-              </div>
-            </motion.div>
-          ))
-        ) : (
-          mockBuyerLeaderboard.map((item, index) => (
-            <motion.div
-              key={item.rank}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`card ${getRankBg(item.rank)}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 flex justify-center">
-                  {getRankIcon(item.rank)}
-                </div>
-                <img
-                  src={item.pfp}
-                  alt={item.username}
-                  className="w-10 h-10 rounded-full"
-                />
-                <div className="flex-1">
-                  <p className="font-bold">@{item.username}</p>
-                  <p className="text-sm text-gray-400">FID: {item.fid}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-claw-primary">{item.boostsBought} boosts</p>
-                  <p className="text-sm text-gray-400">${item.totalSpent} spent</p>
-                </div>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={32} className="animate-spin text-claw-primary" />
+        </div>
+      )}
 
-      {/* Your Rank */}
+      {/* Empty State */}
+      {!loading && message && (
+        <div className="card text-center py-12 bg-gradient-to-r from-claw-primary/10 to-claw-secondary/10">
+          <Trophy size={48} className="mx-auto text-claw-primary mb-4" />
+          <p className="text-lg font-medium text-gray-300">{message}</p>
+          <p className="text-sm text-gray-500 mt-2">Start boosting to climb the ranks!</p>
+        </div>
+      )}
+
+      {/* Leaderboard List */}
+      {!loading && !message && (
+        <div className="space-y-3">
+          {activeType === 'boosted_coins' ? (
+            coinLeaderboard.length > 0 ? (
+              coinLeaderboard.map((item, index) => (
+                <motion.div
+                  key={`${item.symbol}-${item.rank}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`card ${getRankBg(item.rank)}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 flex justify-center">
+                      {getRankIcon(item.rank)}
+                    </div>
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-10 h-10 rounded-full bg-claw-dark"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${item.symbol}`
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold">{item.name}</p>
+                      <p className="text-sm text-gray-400">${item.symbol} • {item.chain}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-claw-primary">{item.boostCount} boosts</p>
+                      <p className="text-sm text-gray-400">${item.totalSpent} spent</p>
+                      {getPrizeDisplay(item.rank)}
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : null
+          ) : (
+            buyerLeaderboard.length > 0 ? (
+              buyerLeaderboard.map((item, index) => (
+                <motion.div
+                  key={`${item.fid}-${item.rank}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`card ${getRankBg(item.rank)}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 flex justify-center">
+                      {getRankIcon(item.rank)}
+                    </div>
+                    <img
+                      src={item.pfp}
+                      alt={item.username}
+                      className="w-10 h-10 rounded-full bg-claw-dark"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.fid}`
+                      }}
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold">@{item.username}</p>
+                      <p className="text-sm text-gray-400">FID: {item.fid}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-claw-primary">{item.boostsBought} boosts</p>
+                      <p className="text-sm text-gray-400">${item.totalSpent} spent</p>
+                      {getPrizeDisplay(item.rank)}
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            ) : null
+          )}
+        </div>
+      )}
+
+      {/* Your Rank - will be dynamic when auth is implemented */}
       <div className="card bg-claw-primary/10 border-claw-primary/30">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-400">Your Rank</p>
-            <p className="text-2xl font-bold">#42</p>
+            <p className="text-2xl font-bold">--</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-400">Total Boosts</p>
-            <p className="text-2xl font-bold text-claw-primary">7</p>
+            <p className="text-2xl font-bold text-claw-primary">0</p>
           </div>
         </div>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          Connect wallet to track your rank
+        </p>
       </div>
     </motion.div>
   )
