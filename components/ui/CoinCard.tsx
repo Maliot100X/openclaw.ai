@@ -6,7 +6,7 @@ import type { Token } from '@/types'
 import { useState } from 'react'
 import SwapModal from './SwapModal'
 import BoostPaymentModal from './BoostPaymentModal'
-import { BOOST_TIERS } from '@/types'
+import { BOOST_TIERS, getBoostTier } from '@/lib/constants'
 
 interface CoinCardProps {
   token: Token
@@ -55,14 +55,7 @@ export default function CoinCard({
     return `https://basescan.org/token/${token.address}`
   }
 
-  const getDexUrl = () => {
-    if (token.chain === 'zora') {
-      return `https://app.uniswap.org/swap?chain=zora&outputCurrency=${token.address}`
-    }
-    return `https://app.uniswap.org/swap?chain=base&outputCurrency=${token.address}`
-  }
-
-  const selectedTierData = BOOST_TIERS.find(t => t.tier === selectedTier) || BOOST_TIERS[0]
+  const selectedTierData = getBoostTier(selectedTier)
 
   return (
     <>
@@ -205,7 +198,7 @@ export default function CoinCard({
                   'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                 }`}
               >
-                ${tier.price} / {tier.durationMinutes}min
+                ${tier.price} / {tier.duration}min
               </button>
             ))}
           </div>
