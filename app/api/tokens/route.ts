@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 const GECKO_BASE_URL = 'https://api.geckoterminal.com/api/v2'
 
 // Chain network IDs for GeckoTerminal
+// IMPORTANT: Use exact network names from GeckoTerminal
 const CHAIN_NETWORKS: Record<string, string> = {
   base: 'base',
-  zora: 'zora-network',
+  zora: 'zora', // Fixed: was 'zora-network'
   ethereum: 'eth',
 }
 
@@ -56,18 +57,18 @@ interface GeckoToken {
 
 // Transform GeckoTerminal data to our Token format
 function transformPoolToToken(pool: GeckoPool, includedTokens: GeckoToken[], chain: string) {
-  const baseTokenId = pool.relationships.base_token.data.id
+  const baseTokenId = pool.relationships?.base_token?.data?.id || ''
   const tokenInfo = includedTokens.find(t => t.id === baseTokenId)
   
   // Extract address from token ID (format: "network_address")
-  const tokenAddress = tokenInfo?.attributes?.address || baseTokenId.split('_').pop() || ''
+  const tokenAddress = tokenInfo?.attributes?.address || baseTokenId.split('_').pop() || pool.attributes.address || ''
   
   return {
     id: pool.id,
     address: tokenAddress,
     chain: chain,
-    name: tokenInfo?.attributes?.name || pool.attributes.name.split(' / ')[0] || 'Unknown',
-    symbol: tokenInfo?.attributes?.symbol || pool.attributes.name.split(' / ')[0] || '???',
+    name: tokenInfo?.attributes?.name || pool.attributes.name?.split(' / ')[0] || 'Unknown',
+    symbol: tokenInfo?.attributes?.symbol || pool.attributes.name?.split(' / ')[0] || '???',
     imageUrl: tokenInfo?.attributes?.image_url || null,
     price: parseFloat(pool.attributes.base_token_price_usd) || 0,
     priceChange24h: parseFloat(pool.attributes.price_change_percentage?.h24) || 0,
@@ -89,12 +90,12 @@ async function fetchNewPools(chain: string) {
       `${GECKO_BASE_URL}/networks/${network}/new_pools?include=base_token&page=1`,
       {
         headers: { 'Accept': 'application/json' },
-        next: { revalidate: 60 }, // Cache for 1 minute
+        next: { revalidate: 60 },
       }
     )
     
     if (!response.ok) {
-      console.error(`GeckoTerminal new pools error: ${response.status}`)
+      console.error(`GeckoTerminal new pools error for ${network}: ${response.status}`)
       return []
     }
     
@@ -104,7 +105,7 @@ async function fetchNewPools(chain: string) {
     
     return pools.map(pool => transformPoolToToken(pool, includedTokens, chain))
   } catch (error) {
-    console.error('Error fetching new pools:', error)
+    console.error(`Error fetching new pools for ${chain}:`, error)
     return []
   }
 }
@@ -123,7 +124,7 @@ async function fetchTrendingPools(chain: string) {
     )
     
     if (!response.ok) {
-      console.error(`GeckoTerminal trending error: ${response.status}`)
+      console.error(`GeckoTerminal trending error for ${network}: ${response.status}`)
       return []
     }
     
@@ -133,7 +134,7 @@ async function fetchTrendingPools(chain: string) {
     
     return pools.map(pool => transformPoolToToken(pool, includedTokens, chain))
   } catch (error) {
-    console.error('Error fetching trending pools:', error)
+    console.error(`Error fetching trending pools for ${chain}:`, error)
     return []
   }
 }
@@ -141,7 +142,7 @@ async function fetchTrendingPools(chain: string) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const chain = searchParams.get('chain') || 'base'
-  const filter = searchParams.get('filter') || 'trending' // 'new' or 'trending'
+  const filter = searchParams.get('filter') || 'trending'
   
   try {
     let tokens = []
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
         .sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0))
         .slice(0, 20)
     } else {
-      // Fetch based on filter (new or trending)
+      // Fetch based on filter
       if (filter === 'new') {
         tokens = await fetchNewPools(chain)
       } else {
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
       success: true,
       chain,
       filter,
-      tokens: tokens.slice(0, 20), // Limit to 20 tokens
+      tokens: tokens.slice(0, 20),
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
