@@ -18,6 +18,13 @@ interface BoostPaymentModalProps {
   tier: 1 | 2 | 3
 }
 
+// Helper function to convert string to hex (browser compatible)
+function stringToHex(str: string): string {
+  return Array.from(str)
+    .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('')
+}
+
 export default function BoostPaymentModal({ isOpen, onClose, token, tier }: BoostPaymentModalProps) {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'confirming' | 'processing' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -108,24 +115,27 @@ export default function BoostPaymentModal({ isOpen, onClose, token, tier }: Boos
       const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' })
       const fromAddress = accounts[0]
 
+      // Create transaction data - convert string to hex without Buffer
+      const dataString = `boost:${tier}:${token.address}`
+      const dataHex = '0x' + stringToHex(dataString)
+
       // Create transaction
       const txParams = {
         from: fromAddress,
         to: PAYMENT_ADDRESS,
         value: '0x' + paymentAmountWei.toString(16),
-        // Add data for tracking: tier + token address
-        data: '0x' + Buffer.from(`boost:${tier}:${token.address}`).toString('hex'),
+        data: dataHex,
       }
 
       setStatus('processing')
 
       // Send transaction
-      const txHash = await (window as any).ethereum.request({
+      const hash = await (window as any).ethereum.request({
         method: 'eth_sendTransaction',
         params: [txParams],
       })
 
-      setTxHash(txHash)
+      setTxHash(hash)
 
       // Save boost to Supabase
       await fetch('/api/boosts', {
@@ -137,7 +147,7 @@ export default function BoostPaymentModal({ isOpen, onClose, token, tier }: Boos
           tokenSymbol: token.symbol,
           chain: token.chain,
           tier,
-          txHash,
+          txHash: hash,
           userAddress: fromAddress,
         }),
       })
