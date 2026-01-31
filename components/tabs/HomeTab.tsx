@@ -225,7 +225,7 @@ export default function HomeTab() {
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="text-green-500" size={24} />
           <h2 className="text-xl font-bold">Trending</h2>
-          <span className="text-xs text-gray-500 ml-2">📊 Live from GeckoTerminal</span>
+          <span className="text-xs text-gray-500 ml-2">🔵 Base + 🟣 Zora • Live</span>
         </div>
 
         {loadingTrending ? (
