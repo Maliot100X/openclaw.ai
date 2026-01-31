@@ -1,9 +1,10 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Rocket, ArrowRightLeft, ExternalLink, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Rocket, ArrowRightLeft, ExternalLink, Loader2, AlertCircle, RefreshCw, Send, ArrowDownToLine } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import SwapModal from '@/components/ui/SwapModal'
+import BoostPaymentModal from '@/components/ui/BoostPaymentModal'
 
 interface HoldingsViewProps {
   onBack: () => void
@@ -42,12 +43,16 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
     token: null, 
     mode: 'buy' 
   })
+  const [boostModal, setBoostModal] = useState<{ open: boolean; token: any }>({
+    open: false,
+    token: null
+  })
 
   const totalValue = holdings.reduce((acc, h) => acc + h.value, 0)
 
   // Check wallet connection
   const checkWallet = useCallback(async () => {
-    // Check localStorage for saved user
+    // Check localStorage for saved user (from Farcaster sync)
     const savedUser = localStorage.getItem('clawai_user')
     if (savedUser) {
       try {
@@ -63,7 +68,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
       }
     }
 
-    // Check MetaMask
+    // Check MetaMask/Coinbase Wallet
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       try {
         const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' })
@@ -73,7 +78,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
           return accounts[0]
         }
       } catch (e) {
-        console.error('Error checking MetaMask:', e)
+        console.error('Error checking wallet:', e)
       }
     }
 
@@ -93,15 +98,18 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
       if (data.success) {
         setHoldings(data.holdings || [])
       } else {
-        // No holdings found - that's okay, show empty state
         setHoldings([])
       }
 
       // Fetch user's active boosts
-      const boostsRes = await fetch(`/api/boosts?userAddress=${address}`)
-      const boostsData = await boostsRes.json()
-      if (boostsData.success) {
-        setBoostedCoins(boostsData.userBoosts || [])
+      try {
+        const boostsRes = await fetch(`/api/boosts?userAddress=${address}`)
+        const boostsData = await boostsRes.json()
+        if (boostsData.success) {
+          setBoostedCoins(boostsData.userBoosts || [])
+        }
+      } catch (e) {
+        console.log('No boosts found')
       }
     } catch (err) {
       console.error('Error fetching holdings:', err)
@@ -139,8 +147,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
         setError('Failed to connect wallet')
       }
     } else {
-      // No wallet - show message
-      setError('No wallet found. Please connect via Profile tab.')
+      setError('No wallet found. Please sync your Farcaster in the Profile tab.')
     }
   }
 
@@ -161,6 +168,21 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
     return `https://basescan.org/token/${holding.address}`
   }
 
+  // Handle Send action - opens external wallet for now
+  const handleSend = (holding: TokenHolding) => {
+    // For Mini App, we can't directly send - show instruction
+    if (holding.symbol === 'ETH') {
+      // Open in wallet
+      const url = holding.chain === 'zora' 
+        ? `https://explorer.zora.energy/address/${walletAddress}` 
+        : `https://basescan.org/address/${walletAddress}`
+      window.open(url, '_blank')
+    } else {
+      // For tokens, open the token page
+      window.open(getExplorerUrl(holding), '_blank')
+    }
+  }
+
   return (
     <div className="p-4 pb-8">
       {/* Header */}
@@ -178,9 +200,10 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
         {walletConnected && (
           <button
             onClick={handleRefresh}
+            disabled={loading}
             className="ml-auto p-2 rounded-full hover:bg-white/10 transition-colors"
           >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={loading ? 'animate-spin text-claw-primary' : ''} />
           </button>
         )}
       </div>
@@ -191,7 +214,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
           <Wallet size={48} className="mx-auto text-claw-primary mb-4" />
           <h3 className="text-lg font-bold mb-2">Connect Your Wallet</h3>
           <p className="text-gray-400 text-sm mb-4">
-            Connect your wallet to view your token holdings
+            Sync your Farcaster profile or connect wallet to view holdings
           </p>
           <button
             onClick={handleConnectWallet}
@@ -200,7 +223,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
             Connect Wallet
           </button>
           <p className="text-xs text-gray-500 mt-3">
-            Or sync your Farcaster in the Profile tab
+            Or sync your Farcaster in the Profile tab for full access
           </p>
         </div>
       )}
@@ -209,7 +232,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
       {loading && (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 size={32} className="animate-spin text-claw-primary mb-4" />
-          <p className="text-gray-400">Loading holdings...</p>
+          <p className="text-gray-400">Loading your tokens...</p>
         </div>
       )}
 
@@ -225,15 +248,26 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
       {walletConnected && !loading && (
         <>
           {/* Wallet Address */}
-          <div className="text-sm text-gray-400 mb-4">
-            Connected: <span className="font-mono text-white">{formatAddress(walletAddress)}</span>
+          <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+            <span>Connected: <span className="font-mono text-white">{formatAddress(walletAddress)}</span></span>
+            <a
+              href={`https://basescan.org/address/${walletAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-claw-primary hover:underline flex items-center gap-1"
+            >
+              View <ExternalLink size={12} />
+            </a>
           </div>
 
           {/* Total Value */}
           <div className="card bg-gradient-to-r from-claw-primary/20 to-claw-secondary/20 border-claw-primary/30 mb-6">
             <p className="text-sm text-gray-400">Total Portfolio Value</p>
             <p className="text-3xl font-bold">
-              {totalValue > 0 ? `$${totalValue.toLocaleString()}` : '$0.00'}
+              {totalValue > 0 ? `$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {holdings.length} token{holdings.length !== 1 ? 's' : ''} on Base & Zora
             </p>
           </div>
 
@@ -296,7 +330,7 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
               <div className="space-y-3">
                 {holdings.map((holding, index) => (
                   <motion.div
-                    key={holding.address}
+                    key={`${holding.address}-${holding.chain}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -304,53 +338,84 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={holding.imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${holding.address}`}
-                          alt={holding.name}
-                          className="w-10 h-10 rounded-full bg-claw-dark"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${holding.address}`
-                          }}
-                        />
+                        <div className="relative">
+                          <img
+                            src={holding.imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${holding.address}`}
+                            alt={holding.name}
+                            className="w-12 h-12 rounded-full bg-claw-dark"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${holding.address}`
+                            }}
+                          />
+                          {/* Chain indicator */}
+                          <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                            holding.chain === 'zora' ? 'bg-purple-500' : 'bg-blue-500'
+                          }`}>
+                            {holding.chain === 'zora' ? '🟣' : '🔵'}
+                          </div>
+                        </div>
                         <div>
                           <p className="font-medium">{holding.name}</p>
                           <p className="text-sm text-gray-400">
-                            {holding.balance.toLocaleString()} ${holding.symbol}
+                            {holding.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })} {holding.symbol}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono">${holding.value.toFixed(2)}</p>
-                        <div className={`flex items-center gap-1 text-sm justify-end ${
-                          holding.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {holding.priceChange24h >= 0 ? (
-                            <TrendingUp size={14} />
-                          ) : (
-                            <TrendingDown size={14} />
-                          )}
-                          <span>{Math.abs(holding.priceChange24h).toFixed(2)}%</span>
-                        </div>
+                        <p className="font-mono font-medium">
+                          ${holding.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        {holding.priceChange24h !== 0 && (
+                          <div className={`flex items-center gap-1 text-sm justify-end ${
+                            holding.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {holding.priceChange24h >= 0 ? (
+                              <TrendingUp size={14} />
+                            ) : (
+                              <TrendingDown size={14} />
+                            )}
+                            <span>{Math.abs(holding.priceChange24h).toFixed(2)}%</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Actions */}
                     <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
-                      <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-claw-primary/20 text-claw-primary rounded-lg hover:bg-claw-primary/30 transition-colors">
-                        <Rocket size={16} />
-                        <span>Boost</span>
-                      </button>
+                      {/* Boost - only for non-ETH tokens */}
+                      {holding.symbol !== 'ETH' && (
+                        <button 
+                          onClick={() => setBoostModal({ open: true, token: holding })}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-claw-primary/20 text-claw-primary rounded-lg hover:bg-claw-primary/30 transition-colors text-sm"
+                        >
+                          <Rocket size={16} />
+                          <span>Boost</span>
+                        </button>
+                      )}
+                      
+                      {/* Swap */}
                       <button 
                         onClick={() => setSwapModal({ 
                           open: true, 
                           token: holding, 
                           mode: 'sell' 
                         })}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
                       >
                         <ArrowRightLeft size={16} />
                         <span>Swap</span>
                       </button>
+                      
+                      {/* Send */}
+                      <button 
+                        onClick={() => handleSend(holding)}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm"
+                      >
+                        <Send size={16} />
+                        <span>Send</span>
+                      </button>
+                      
+                      {/* Explorer */}
                       <a
                         href={getExplorerUrl(holding)}
                         target="_blank"
@@ -382,6 +447,27 @@ export default function HoldingsView({ onBack }: HoldingsViewProps) {
             imageUrl: swapModal.token.imageUrl,
           }}
           mode={swapModal.mode}
+        />
+      )}
+
+      {/* Boost Payment Modal */}
+      {boostModal.token && (
+        <BoostPaymentModal
+          isOpen={boostModal.open}
+          onClose={() => setBoostModal({ ...boostModal, open: false })}
+          token={{
+            address: boostModal.token.address,
+            name: boostModal.token.name,
+            symbol: boostModal.token.symbol,
+            chain: boostModal.token.chain,
+            imageUrl: boostModal.token.imageUrl,
+          }}
+          tier={1}
+          price={1}
+          onSuccess={() => {
+            setBoostModal({ ...boostModal, open: false })
+            handleRefresh()
+          }}
         />
       )}
     </div>
