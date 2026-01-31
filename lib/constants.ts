@@ -21,12 +21,15 @@ export const CHAINS = {
   },
 } as const
 
-// Boost tiers
-export const BOOST_TIERS = {
-  1: { price: 1, duration: 10, name: 'Boost', description: '10 min spotlight' },
-  2: { price: 3, duration: 25, name: 'ClawKing', description: '25 min visibility' },
-  3: { price: 6, duration: 60, name: 'Jetted King', description: 'Global + notifications' },
-} as const
+// Boost tiers (array format for easy indexing)
+export const BOOST_TIERS = [
+  { tier: 1, price: 1, duration: 10, name: 'Boost', description: '10 min spotlight' },
+  { tier: 2, price: 3, duration: 25, name: 'ClawKing', description: '25 min visibility' },
+  { tier: 3, price: 6, duration: 60, name: 'Jetted King', description: 'Global + notifications' },
+] as const
+
+// Helper to get tier by number
+export const getBoostTier = (tier: number) => BOOST_TIERS.find(t => t.tier === tier) || BOOST_TIERS[0]
 
 // USDC addresses
 export const USDC_ADDRESS = {

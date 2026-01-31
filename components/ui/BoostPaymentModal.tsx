@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2, CheckCircle2, AlertCircle, Crown, Rocket, Zap } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { PAYMENT_ADDRESS, BOOST_TIERS, CHAINS } from '@/lib/constants'
+import { PAYMENT_ADDRESS, BOOST_TIERS, CHAINS, getBoostTier } from '@/lib/constants'
 
 interface BoostPaymentModalProps {
   isOpen: boolean
@@ -42,8 +42,7 @@ export default function BoostPaymentModal({
 
   // Handle tier as number (1, 2, 3) or special values (0 = trial sub, -1 = premium sub)
   const isSubscription = tier <= 0
-  const tierIndex = isSubscription ? 0 : Math.max(0, Math.min(2, tier - 1))
-  const tierInfo = BOOST_TIERS[tierIndex]
+  const tierInfo = getBoostTier(tier)
   const chainConfig = token.chain === 'zora' ? CHAINS.ZORA : CHAINS.BASE
 
   // Use prop price if provided, otherwise use tier price
