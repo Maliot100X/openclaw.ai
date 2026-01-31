@@ -1,5 +1,5 @@
 // GeckoTerminal API for real token data
-// Base chain: base, Zora chain: zora
+// Network IDs: base, zora (not zora-network)
 
 const GECKO_BASE_URL = process.env.GECKOTERMINAL_BASE_URL || 'https://api.geckoterminal.com/api/v2'
 
@@ -57,11 +57,24 @@ export interface GeckoPool {
   }
 }
 
+// Network ID mapping - IMPORTANT: Zora is 'zora', not 'zora-network'
+const getNetworkId = (chain: string): string => {
+  const networkMap: Record<string, string> = {
+    'base': 'base',
+    'zora': 'zora',
+    'eth': 'eth',
+    'ethereum': 'eth',
+  }
+  return networkMap[chain.toLowerCase()] || chain
+}
+
 // Fetch trending pools for a chain
 export async function fetchTrendingPools(chain: 'base' | 'zora', page: number = 1) {
+  const network = getNetworkId(chain)
+  
   try {
     const response = await fetch(
-      `${GECKO_BASE_URL}/networks/${chain}/trending_pools?page=${page}`,
+      `${GECKO_BASE_URL}/networks/${network}/trending_pools?page=${page}`,
       {
         headers: { 'Accept': 'application/json' },
         next: { revalidate: 60 } // Cache for 60 seconds
@@ -69,7 +82,8 @@ export async function fetchTrendingPools(chain: 'base' | 'zora', page: number = 
     )
 
     if (!response.ok) {
-      throw new Error(`GeckoTerminal API error: ${response.status}`)
+      console.error(`GeckoTerminal trending_pools error for ${network}: ${response.status}`)
+      return null
     }
 
     const data = await response.json()
@@ -80,11 +94,13 @@ export async function fetchTrendingPools(chain: 'base' | 'zora', page: number = 
   }
 }
 
-// Fetch top pools by volume for a chain
-export async function fetchTopPools(chain: 'base' | 'zora', page: number = 1) {
+// Fetch new pools for a chain
+export async function fetchNewPools(chain: 'base' | 'zora', page: number = 1) {
+  const network = getNetworkId(chain)
+  
   try {
     const response = await fetch(
-      `${GECKO_BASE_URL}/networks/${chain}/pools?page=${page}&sort=h24_volume_usd_desc`,
+      `${GECKO_BASE_URL}/networks/${network}/new_pools?page=${page}`,
       {
         headers: { 'Accept': 'application/json' },
         next: { revalidate: 60 }
@@ -92,7 +108,34 @@ export async function fetchTopPools(chain: 'base' | 'zora', page: number = 1) {
     )
 
     if (!response.ok) {
-      throw new Error(`GeckoTerminal API error: ${response.status}`)
+      console.error(`GeckoTerminal new_pools error for ${network}: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error(`Error fetching new pools for ${chain}:`, error)
+    return null
+  }
+}
+
+// Fetch top pools by volume for a chain
+export async function fetchTopPools(chain: 'base' | 'zora', page: number = 1) {
+  const network = getNetworkId(chain)
+  
+  try {
+    const response = await fetch(
+      `${GECKO_BASE_URL}/networks/${network}/pools?page=${page}&sort=h24_volume_usd_desc`,
+      {
+        headers: { 'Accept': 'application/json' },
+        next: { revalidate: 60 }
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`GeckoTerminal pools error for ${network}: ${response.status}`)
+      return null
     }
 
     const data = await response.json()
@@ -105,14 +148,9 @@ export async function fetchTopPools(chain: 'base' | 'zora', page: number = 1) {
 
 // Search for token by address
 export async function searchTokenByAddress(chain: 'base' | 'zora' | 'eth', address: string) {
+  const network = getNetworkId(chain)
+  
   try {
-    const networkMap: Record<string, string> = {
-      'base': 'base',
-      'zora': 'zora',
-      'eth': 'eth'
-    }
-    const network = networkMap[chain] || chain
-    
     const response = await fetch(
       `${GECKO_BASE_URL}/networks/${network}/tokens/${address}`,
       {
@@ -125,7 +163,8 @@ export async function searchTokenByAddress(chain: 'base' | 'zora' | 'eth', addre
       if (response.status === 404) {
         return null // Token not found
       }
-      throw new Error(`GeckoTerminal API error: ${response.status}`)
+      console.error(`GeckoTerminal token search error for ${network}: ${response.status}`)
+      return null
     }
 
     const data = await response.json()
@@ -138,9 +177,11 @@ export async function searchTokenByAddress(chain: 'base' | 'zora' | 'eth', addre
 
 // Fetch token info with pools
 export async function fetchTokenWithPools(chain: 'base' | 'zora', address: string) {
+  const network = getNetworkId(chain)
+  
   try {
     const response = await fetch(
-      `${GECKO_BASE_URL}/networks/${chain}/tokens/${address}/pools`,
+      `${GECKO_BASE_URL}/networks/${network}/tokens/${address}/pools`,
       {
         headers: { 'Accept': 'application/json' },
         next: { revalidate: 60 }
@@ -148,7 +189,8 @@ export async function fetchTokenWithPools(chain: 'base' | 'zora', address: strin
     )
 
     if (!response.ok) {
-      throw new Error(`GeckoTerminal API error: ${response.status}`)
+      console.error(`GeckoTerminal token pools error for ${network}: ${response.status}`)
+      return null
     }
 
     const data = await response.json()
@@ -170,7 +212,7 @@ export function transformPoolToToken(pool: GeckoPool, chain: 'base' | 'zora', in
     tokenInfo = includedTokens.find((t: any) => t.id === baseTokenId)
   }
   
-  const name = tokenInfo?.attributes?.name || pool.attributes.name.split(' / ')[0] || 'Unknown'
+  const name = tokenInfo?.attributes?.name || pool.attributes.name?.split(' / ')[0] || 'Unknown'
   const symbol = tokenInfo?.attributes?.symbol || name.split(' ')[0] || '???'
   const imageUrl = tokenInfo?.attributes?.image_url
   
@@ -187,7 +229,7 @@ export function transformPoolToToken(pool: GeckoPool, chain: 'base' | 'zora', in
     marketCap: parseFloat(pool.attributes.market_cap_usd || '0'),
     fdv: parseFloat(pool.attributes.fdv_usd || '0'),
     liquidity: parseFloat(pool.attributes.reserve_in_usd || '0'),
-    verified: true,
+    verified: !!tokenInfo?.attributes?.coingecko_coin_id,
     poolAddress: pool.attributes.address,
     createdAt: pool.attributes.pool_created_at
   }
