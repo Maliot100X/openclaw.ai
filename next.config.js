@@ -15,11 +15,12 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Allow Farcaster and Base Mini App to embed in iframe
         source: '/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://warpcast.com https://*.warpcast.com https://farcaster.xyz https://*.farcaster.xyz https://wallet.coinbase.com https://*.coinbase.com",
           },
         ],
       },
