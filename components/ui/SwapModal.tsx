@@ -39,9 +39,9 @@ export default function SwapModal({ isOpen, onClose, token, mode }: SwapModalPro
           setUserAddress(window.farcaster.wallet.address || '')
         } 
         // Check MetaMask
-        else if (window.ethereum) {
+        else if ((window as any).ethereum) {
           try {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+            const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' })
             if (accounts && accounts.length > 0) {
               setWalletConnected(true)
               setUserAddress(accounts[0])
@@ -84,22 +84,22 @@ export default function SwapModal({ isOpen, onClose, token, mode }: SwapModalPro
       }
       
       // Fall back to MetaMask/injected
-      if (window.ethereum) {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      if ((window as any).ethereum) {
+        const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' })
         if (accounts && accounts.length > 0) {
           setUserAddress(accounts[0])
           setWalletConnected(true)
           
           // Switch to correct chain
           try {
-            await window.ethereum.request({
+            await (window as any).ethereum.request({
               method: 'wallet_switchEthereumChain',
               params: [{ chainId: `0x${chainConfig.id.toString(16)}` }],
             })
           } catch (switchError: any) {
             // Chain not added, add it
             if (switchError.code === 4902) {
-              await window.ethereum.request({
+              await (window as any).ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
                   chainId: `0x${chainConfig.id.toString(16)}`,
