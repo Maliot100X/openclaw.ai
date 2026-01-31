@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import BottomNav from '@/components/navigation/BottomNav'
 import BotPopup from '@/components/bot/BotPopup'
+import WalkingCrab from '@/components/ui/WalkingCrab'
 import HomeTab from '@/components/tabs/HomeTab'
 import TokensTab from '@/components/tabs/TokensTab'
 import LeaderboardTab from '@/components/tabs/LeaderboardTab'
@@ -55,6 +56,9 @@ export default function Home() {
         isOpen={showMore}
         onClose={() => setShowMore(false)}
       />
+
+      {/* Walking Crab Animation - Shows every 5 minutes */}
+      <WalkingCrab />
 
       {/* AI Bot Popup Button */}
       <button
