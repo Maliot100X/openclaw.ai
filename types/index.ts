@@ -40,14 +40,18 @@ export interface Token {
   address: string
   name: string
   symbol: string
-  chain: 'base' | 'zora' | 'ethereum'
+  chain: 'base' | 'zora' | 'ethereum' | string
   imageUrl?: string
   price?: number
   priceChange24h?: number
   marketCap?: number
   volume24h?: number
+  liquidity?: number  // Total liquidity in USD
+  fdv?: number        // Fully Diluted Valuation
   holders?: number
   verified: boolean
+  poolAddress?: string  // DEX pool address
+  createdAt?: string    // When token was created/detected
   metadata?: TokenMetadata
 }
 
@@ -56,6 +60,7 @@ export interface TokenMetadata {
   website?: string
   twitter?: string
   telegram?: string
+  coingeckoId?: string
 }
 
 // Boost Types
@@ -178,4 +183,31 @@ export interface PaginatedResponse<T> {
   page: number
   pageSize: number
   hasMore: boolean
+}
+
+// Holdings Types (for Profile -> Holdings tab)
+export interface Holding {
+  token: Token
+  balance: string
+  balanceUsd: number
+  chain: string
+}
+
+// Farcaster specific
+export interface FarcasterUser {
+  fid: number
+  username: string
+  displayName: string
+  pfp: {
+    url: string
+  }
+  profile: {
+    bio: {
+      text: string
+    }
+  }
+  verifiedAddresses: {
+    ethAddresses: string[]
+  }
+  custodyAddress: string
 }
