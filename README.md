@@ -1,202 +1,168 @@
 # 🦀 ClawAI King Booster
 
-**Farcaster + Base Mini App for boosting coins to the top!**
+**The ultimate Farcaster & Base Mini App for boosting your favorite coins to the spotlight!**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Maliot100X/openclaw.ai)
+![ClawAI King Booster](https://img.shields.io/badge/ClawAI-King%20Booster-ff6b6b?style=for-the-badge)
+![Base](https://img.shields.io/badge/Base-Chain-0052FF?style=for-the-badge)
+![Zora](https://img.shields.io/badge/Zora-Network-7C3AED?style=for-the-badge)
+![Farcaster](https://img.shields.io/badge/Farcaster-Mini%20App-8B5CF6?style=for-the-badge)
 
 ## 🚀 Live Demo
 
-**[https://openclaw-ai-one.vercel.app](https://openclaw-ai-one.vercel.app)**
-
----
+**Production**: [https://openclaw-ai-one.vercel.app](https://openclaw-ai-one.vercel.app)
 
 ## ✨ Features
 
-### 📊 Real Token Data
-- **Base Chain** - New & Trending tokens from GeckoTerminal
-- **Zora Chain** - New & Trending tokens from GeckoTerminal  
-- **Search by Contract** - Paste any 0x address to find token
-- **Auto-refresh** - Data updates every 60 seconds
+### 🏠 Home Tab
+- **ClawKing Spotlight** - Featured boosted coins with countdown timers
+- **Trending Section** - Live data from Base + Zora via GeckoTerminal
+- **Walking Crab Animation** - Fun mascot that appears every 5 minutes!
 
-### 💰 Easy Trading
-- **Buy Button** - Opens Uniswap with token pre-selected
-- **Sell Button** - Opens Uniswap for selling
-- **Explorer Link** - View token on BaseScan/Zora Explorer
+### 💎 ClawWarTokens Tab
+- **Base Coins** - [New] [Trending] sub-tabs with real-time data
+- **Zora Coins** - [New] [Trending] sub-tabs with real-time data  
+- **Combined Trending** - Top coins across both networks
+- **Search by Contract** - Paste any 0x address to find tokens
 
-### 🚀 Boost System
-- **Tier 1** - $1 for 10 minutes spotlight
-- **Tier 2** - $3 for 25 minutes visibility
-- **Tier 3** - $6 for global boost + push notifications
+### 🏆 Leaderboard Tab
+- **Top Boosters** - Rankings with weekly prizes
+- **Prizes**: 🥇 $50 USDC | 🥈 $25 USDC | 🥉 Free Boost + $1 Trial
+- **Real-time scores** from Supabase
 
-### 🏆 Leaderboard
-- **Real-time Rankings** - Top boosters by activity
-- **Weekly Prizes** - Top 1: $50 USDC, Top 2: $25 USDC, Top 3: Free boost + $1 sub trial
-- **Coins & Buyers** - Separate rankings
+### 🛒 Shop Tab
+- **Boost Tier I** - $1 for 10 min spotlight
+- **ClawKing Tier II** - $3 for 25 min visibility  
+- **Jetted King Tier III** - $6 for global + notifications
+- **Premium Subscription** - Monthly access to all features
 
-### 🤖 Dual AI Bots
+### 👤 Profile Tab
+- **Farcaster Sync** - Enter username or FID to sync profile
+- **Wallet Connections** - Farcaster, Base, MetaMask support
+- **Activity Stats** - Boost history and spending
+
+### 📦 Holdings (More Tab)
+- **Real Token Balances** - Fetched from connected wallet
+- **Swap/Sell** - In-app trading via Uniswap integration
+- **Boost from Holdings** - One-click boost for your tokens
+
+### 🤖 AI Bots (Floating Button)
 - **OpenClaw AI** - Crypto & Farcaster assistant
 - **Market Intel** - AlphaVantage-powered market signals
 - **Separate Chat Histories** - Each bot has its own conversation
+- **Multi-Provider Fallback** - Gemini → Groq → Mistral → ApiFree → AIMLAPI
 
-### 👤 Profile & Wallet
-- **Farcaster Sync** - Pull profile by username or FID
-- **Wallet Connections** - Base wallet, external wallet
-- **Holdings View** - See your token holdings
+## 🔧 Tech Stack
 
----
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Database**: Supabase (PostgreSQL)
+- **APIs**: 
+  - GeckoTerminal (token data)
+  - Neynar (Farcaster integration)
+  - AlphaVantage (market signals)
+- **Wallet**: MetaMask, WalletConnect, Farcaster custody
+- **Deployment**: Vercel
 
-## 🛠️ Tech Stack
+## 📱 Compatibility
 
-| Component | Technology |
-|-----------|------------|
-| Framework | Next.js 14 (App Router) |
-| Styling | Tailwind CSS |
-| Animations | Framer Motion |
-| Database | Supabase |
-| Token Data | GeckoTerminal API |
-| Farcaster | Neynar API |
-| AI Fallback | Gemini → Groq → Mistral → ApiFree → AIMLAPI |
-| Market Data | AlphaVantage MCP |
-| Chains | Base, Zora |
+- ✅ Farcaster Mini App (Warpcast)
+- ✅ Base Mini App (Coinbase Wallet)
+- ✅ Web Browser (Desktop & Mobile)
+- ✅ MetaMask
 
----
+## 💰 Payment Address
 
-## 📁 Project Structure
-
+All boost and subscription payments go to:
 ```
-openclaw.ai/
-├── app/
-│   ├── api/
-│   │   ├── bot/chat/         # AI chat endpoint
-│   │   ├── tokens/           # Token data endpoints
-│   │   ├── boosts/           # Boost management
-│   │   ├── leaderboard/      # Rankings
-│   │   └── user/farcaster/   # Profile sync
-│   ├── layout.tsx
-│   └── page.tsx
-├── components/
-│   ├── bot/                  # AI bot popup
-│   ├── tabs/                 # Main app tabs
-│   │   ├── HomeTab.tsx       # Spotlight + Trending
-│   │   ├── TokensTab.tsx     # Base/Zora/Trending
-│   │   ├── LeaderboardTab.tsx
-│   │   ├── ShopTab.tsx
-│   │   ├── ProfileTab.tsx
-│   │   └── MoreTab.tsx
-│   └── ui/                   # Reusable components
-├── lib/
-│   ├── ai/                   # AI router
-│   ├── api/                  # External APIs
-│   └── supabase/             # Database
-└── types/
+0xccd1e099590bfedf279e239558772bbb50902ef6
 ```
 
----
+## 🛠️ Development
 
-## 🔧 Environment Variables
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- API keys (see `.env.example`)
 
-Create `.env.local` with:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Neynar (Farcaster)
-NEYNAR_APP_API_KEY=your_neynar_key
-
-# AI Providers (fallback chain)
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-MISTRAL_API_KEY=your_mistral_key
-APIFREE_API_KEY=your_apifree_key
-AIMLAPI_API_KEY=your_aimlapi_key
-
-# AlphaVantage
-ALPHAVANTAGE_API_KEY=your_alphavantage_key
-
-# Chains
-BASE_RPC=your_base_rpc_url
-ZORA_RPC=your_zora_rpc_url
-
-# App
-NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_id
-```
-
----
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-1. Fork this repo
-2. Import to Vercel
-3. Add environment variables
-4. Deploy!
-
-### Local Development
+### Setup
 
 ```bash
-# Clone
+# Clone the repo
 git clone https://github.com/Maliot100X/openclaw.ai.git
 cd openclaw.ai
 
-# Install
+# Install dependencies
 npm install
 
-# Run
+# Copy environment variables
+cp .env.example .env.local
+# Edit .env.local with your API keys
+
+# Run development server
 npm run dev
 ```
 
----
+### Environment Variables
 
-## 📋 Progress
+See `.env.example` for all required variables:
+- Supabase credentials
+- Neynar API keys
+- AI provider keys (Gemini, Groq, Mistral, etc.)
+- Chain RPC endpoints (Base, Zora)
+- WalletConnect project ID
+
+## 📊 API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/tokens` | Fetch tokens (chain, filter params) |
+| `/api/tokens/search` | Search by contract address |
+| `/api/boosts` | Get/create boosts |
+| `/api/leaderboard` | Leaderboard rankings |
+| `/api/user/farcaster` | Sync Farcaster profile |
+| `/api/user/holdings` | Fetch wallet balances |
+| `/api/bot/chat` | AI bot conversations |
+
+## 🗓️ Roadmap
 
 ### ✅ Phase 1: UI Complete
-- [x] All 5 main tabs + More tab
-- [x] Responsive mobile-first design
-- [x] Farcaster Mini App compatible
-- [x] Base Mini App compatible
+- All 5 tabs + More sheet
+- Bot popup with two modes
+- Responsive design
 
 ### ✅ Phase 2: Real Data
-- [x] GeckoTerminal integration (Base + Zora)
-- [x] New/Trending mini-tabs for each chain
-- [x] Contract address search
-- [x] Farcaster profile sync via Neynar
-- [x] Dual AI bots with separate histories
-- [x] Buy/Sell buttons on all tokens
-- [x] Boost price tiers on cards
-- [x] Real leaderboard from Supabase
-- [x] Prize announcements
+- GeckoTerminal integration
+- Farcaster sync via Neynar
+- Supabase database
+- In-app swap modal
+- Walking crab animation
 
-### 🚧 Phase 3: Payments (Next)
-- [ ] Onchain ETH/USDC payments
-- [ ] WalletConnect integration
-- [ ] Push notifications (Neynar)
-- [ ] Holdings fetching
-- [ ] Swap from within app
+### 🔄 Phase 3: Payments (In Progress)
+- On-chain ETH/USDC payments
+- Push notifications for Tier III
+- Subscription billing
 
-### 📅 Phase 4: Automation
-- [ ] Social sharing (Twitter/Farcaster/Telegram)
-- [ ] AI auto-posting settings
-- [ ] Points & rewards system
+### 📅 Phase 4: Social & Automation
+- Auto-post to Twitter/Farcaster
+- AI-powered market signals
+- Points & rewards system
 
----
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE)
+
+## 🤝 Contributing
+
+Contributions welcome! Please read our contributing guidelines first.
 
 ## 🔗 Links
 
-- **Live App**: [openclaw-ai-one.vercel.app](https://openclaw-ai-one.vercel.app)
-- **GitHub**: [github.com/Maliot100X/openclaw.ai](https://github.com/Maliot100X/openclaw.ai)
 - **Farcaster**: [@maliotsol](https://farcaster.xyz/maliotsol)
+- **GitHub**: [Maliot100X/openclaw.ai](https://github.com/Maliot100X/openclaw.ai)
+- **Vercel**: [openclaw-ai-one.vercel.app](https://openclaw-ai-one.vercel.app)
 
 ---
 
-## 📄 License
-
-MIT License - feel free to fork and build!
-
----
-
-**Built with 🦀 by the ClawAI team**
+**Made with 🦀 by ClawAI Team**
