@@ -1,9 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ShoppingBag, Rocket, Crown, Zap, Star, Check, Search, Sparkles, Loader2, AlertCircle } from 'lucide-react'
-import { BOOST_TIERS } from '@/types'
+import { BOOST_TIERS } from '@/lib/constants'
 import BoostPaymentModal from '@/components/ui/BoostPaymentModal'
 
 type ShopSection = 'boosters' | 'subscription'
@@ -140,6 +140,19 @@ export default function ShopTab() {
     }
   }
 
+  const getTierFeatures = (tier: number) => {
+    switch (tier) {
+      case 1:
+        return ['Shown in Home section', '10 minutes visibility']
+      case 2:
+        return ['Shown in Home section', 'ClawKing badge', '25 minutes visibility']
+      case 3:
+        return ['TOP of Home section', 'ClawKing Jetted badge', '60 minutes visibility', 'Push notification to ALL users']
+      default:
+        return []
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -268,7 +281,7 @@ export default function ShopTab() {
                     </div>
                     <p className="text-gray-400 text-sm mt-1">{tier.description}</p>
                     <ul className="mt-3 space-y-1">
-                      {tier.features.map((feature, i) => (
+                      {getTierFeatures(tier.tier).map((feature, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">
                           <Check size={14} className="text-green-400" />
                           <span>{feature}</span>
