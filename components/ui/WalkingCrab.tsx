@@ -12,37 +12,42 @@ const CRAB_MESSAGES = [
   '🔥 Go viral!',
   '🏆 Top the charts!',
   '🦀 ClawKing time!',
+  '💎 HODL strong!',
+  '📈 Moon soon?',
 ]
 
 export default function WalkingCrab() {
   const [isVisible, setIsVisible] = useState(false)
   const [message, setMessage] = useState('')
-  const [position, setPosition] = useState({ x: -100, direction: 1 })
+  const [startFromLeft, setStartFromLeft] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Show crab every 5 minutes
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    // Show crab function
     const showCrab = () => {
       // Random message
       const randomMessage = CRAB_MESSAGES[Math.floor(Math.random() * CRAB_MESSAGES.length)]
       setMessage(randomMessage)
       
-      // Random starting side (left or right)
-      const startFromLeft = Math.random() > 0.5
-      setPosition({ 
-        x: startFromLeft ? -100 : window.innerWidth + 100, 
-        direction: startFromLeft ? 1 : -1 
-      })
+      // Random starting side
+      setStartFromLeft(Math.random() > 0.5)
       
       setIsVisible(true)
       
       // Hide after walking across
       setTimeout(() => {
         setIsVisible(false)
-      }, 8000) // 8 seconds to walk across
+      }, 10000) // 10 seconds to walk across
     }
 
-    // Initial show after 30 seconds
-    const initialTimer = setTimeout(showCrab, 30000)
+    // Initial show after 10 seconds (faster for demo)
+    const initialTimer = setTimeout(showCrab, 10000)
     
     // Then every 5 minutes
     const interval = setInterval(showCrab, 5 * 60 * 1000)
@@ -51,57 +56,56 @@ export default function WalkingCrab() {
       clearTimeout(initialTimer)
       clearInterval(interval)
     }
-  }, [])
+  }, [mounted])
 
-  if (!isVisible) return null
+  if (!mounted || !isVisible) return null
 
   return (
     <AnimatePresence>
       <motion.div
+        key="walking-crab"
         initial={{ 
-          x: position.x,
-          y: typeof window !== 'undefined' ? window.innerHeight - 150 : 500
+          x: startFromLeft ? -120 : '100vw',
+          opacity: 1
         }}
         animate={{ 
-          x: position.direction === 1 
-            ? (typeof window !== 'undefined' ? window.innerWidth + 100 : 500) 
-            : -100
+          x: startFromLeft ? '100vw' : -120,
         }}
         exit={{ opacity: 0 }}
         transition={{ 
-          duration: 8,
+          duration: 10,
           ease: 'linear'
         }}
-        className="fixed z-40 pointer-events-none"
-        style={{ bottom: 80 }}
+        className="fixed z-[100] pointer-events-none"
+        style={{ bottom: 100 }}
       >
         <div className="relative">
           {/* Speech bubble */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.5, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap"
           >
-            <div className="bg-claw-primary px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">
+            <div className="bg-gradient-to-r from-claw-primary to-claw-secondary px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-claw-primary/50">
               {message}
             </div>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-claw-primary rotate-45" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-claw-primary rotate-45" />
           </motion.div>
           
           {/* Crab emoji with walking animation */}
           <motion.div
             animate={{ 
-              rotate: [0, -5, 0, 5, 0],
-              y: [0, -3, 0, -3, 0]
+              rotate: [0, -8, 0, 8, 0],
+              y: [0, -5, 0, -5, 0]
             }}
             transition={{ 
-              duration: 0.5,
+              duration: 0.4,
               repeat: Infinity,
               ease: 'easeInOut'
             }}
-            className="text-5xl"
-            style={{ transform: position.direction === -1 ? 'scaleX(-1)' : 'scaleX(1)' }}
+            className="text-6xl drop-shadow-lg"
+            style={{ transform: startFromLeft ? 'scaleX(1)' : 'scaleX(-1)' }}
           >
             🦀
           </motion.div>

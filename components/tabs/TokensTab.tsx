@@ -1,17 +1,17 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
-import { Search, Coins, Sparkles, TrendingUp, Loader2, AlertCircle, Flame, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Search, Coins, Sparkles, TrendingUp, Loader2, AlertCircle, Flame, Clock, RefreshCw } from 'lucide-react'
 import CoinCard from '@/components/ui/CoinCard'
 import type { Token, TokenSubTab } from '@/types'
 
 type MiniTab = 'new' | 'trending'
 
-const subTabs: { id: TokenSubTab; label: string; icon: typeof Coins; hasMiniTabs: boolean }[] = [
-  { id: 'base', label: 'Base', icon: Coins, hasMiniTabs: true },
-  { id: 'zora', label: 'Zora', icon: Sparkles, hasMiniTabs: true },
-  { id: 'trending', label: 'Trending', icon: TrendingUp, hasMiniTabs: false },
+const subTabs: { id: TokenSubTab; label: string; icon: typeof Coins; emoji: string; hasMiniTabs: boolean }[] = [
+  { id: 'base', label: 'Base', icon: Coins, emoji: '🔵', hasMiniTabs: true },
+  { id: 'zora', label: 'Zora', icon: Sparkles, emoji: '🟣', hasMiniTabs: true },
+  { id: 'trending', label: 'Trending', icon: TrendingUp, emoji: '🔥', hasMiniTabs: false },
 ]
 
 export default function TokensTab() {
@@ -30,45 +30,46 @@ export default function TokensTab() {
   const showMiniTabs = currentTabConfig?.hasMiniTabs || false
 
   // Fetch tokens based on active tab and mini tab
-  useEffect(() => {
-    async function fetchTokens() {
-      setLoading(true)
-      setError(null)
-      
-      try {
-        // Build the API URL based on current selection
-        let apiUrl = '/api/tokens?'
-        
-        if (activeSubTab === 'trending') {
-          // Trending tab shows trending from both chains
-          apiUrl += 'chain=trending'
-        } else {
-          // Base or Zora with mini tab selection
-          apiUrl += `chain=${activeSubTab}&filter=${activeMiniTab}`
-        }
-        
-        const res = await fetch(apiUrl)
-        const data = await res.json()
-        
-        if (data.success) {
-          setTokens(data.tokens || [])
-        } else {
-          setError(data.error || 'Failed to fetch tokens')
-        }
-      } catch (err) {
-        console.error('Error fetching tokens:', err)
-        setError('Failed to load tokens')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const fetchTokens = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     
+    try {
+      // Build the API URL based on current selection
+      let apiUrl = '/api/tokens?'
+      
+      if (activeSubTab === 'trending') {
+        // Trending tab shows trending from both chains
+        apiUrl += 'chain=trending'
+      } else {
+        // Base or Zora with mini tab selection
+        apiUrl += `chain=${activeSubTab}&filter=${activeMiniTab}`
+      }
+      
+      const res = await fetch(apiUrl)
+      const data = await res.json()
+      
+      if (data.success) {
+        setTokens(data.tokens || [])
+      } else {
+        setError(data.error || 'Failed to fetch tokens')
+      }
+    } catch (err) {
+      console.error('Error fetching tokens:', err)
+      setError('Failed to load tokens')
+    } finally {
+      setLoading(false)
+    }
+  }, [activeSubTab, activeMiniTab])
+
+  // Initial fetch and auto-refresh
+  useEffect(() => {
     fetchTokens()
     
     // Auto-refresh every 60 seconds
     const interval = setInterval(fetchTokens, 60000)
     return () => clearInterval(interval)
-  }, [activeSubTab, activeMiniTab])
+  }, [fetchTokens])
 
   // Search by contract address
   const handleSearch = async () => {
@@ -116,6 +117,13 @@ export default function TokensTab() {
     }
   }
 
+  // Manual refresh
+  const handleRefresh = () => {
+    setSearchResult(null)
+    setSearchError(null)
+    fetchTokens()
+  }
+
   // Filter displayed tokens (local filter for already loaded tokens)
   const filteredTokens = tokens.filter((coin) =>
     searchQuery === '' ||
@@ -131,10 +139,20 @@ export default function TokensTab() {
       exit={{ opacity: 0, y: -20 }}
       className="p-4 space-y-4"
     >
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Coins className="text-claw-primary" size={28} />
-        <h1 className="text-2xl font-bold">ClawWarTokens</h1>
+      {/* Header with Refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Coins className="text-claw-primary" size={28} />
+          <h1 className="text-2xl font-bold">ClawWarTokens</h1>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={loading}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50"
+          title="Refresh tokens"
+        >
+          <RefreshCw size={20} className={loading ? 'animate-spin text-claw-primary' : ''} />
+        </button>
       </div>
 
       {/* Main Sub-tabs */}
@@ -157,7 +175,7 @@ export default function TokensTab() {
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Icon size={18} />
+              <span>{tab.emoji}</span>
               <span>{tab.label}</span>
             </button>
           )
@@ -182,7 +200,7 @@ export default function TokensTab() {
               }`}
             >
               <Clock size={16} />
-              <span>New</span>
+              <span>🕐 New</span>
             </button>
             <button
               onClick={() => setActiveMiniTab('trending')}
@@ -193,7 +211,7 @@ export default function TokensTab() {
               }`}
             >
               <Flame size={16} />
-              <span>Trending</span>
+              <span>🔥 Trending</span>
             </button>
           </motion.div>
         )}
@@ -256,26 +274,28 @@ export default function TokensTab() {
         <span className="text-gray-400">
           {activeSubTab === 'trending' 
             ? '🔥 Trending on Base & Zora'
-            : `${showMiniTabs ? (activeMiniTab === 'new' ? '🆕 New' : '🔥 Trending') : ''} on ${activeSubTab.charAt(0).toUpperCase() + activeSubTab.slice(1)}`
+            : `${showMiniTabs ? (activeMiniTab === 'new' ? '🆕 New' : '🔥 Trending') : ''} on ${currentTabConfig?.emoji} ${activeSubTab.charAt(0).toUpperCase() + activeSubTab.slice(1)}`
           }
         </span>
-        {!loading && (
-          <span className="text-gray-500">{filteredTokens.length} tokens</span>
-        )}
+        <div className="flex items-center gap-2">
+          {!loading && (
+            <span className="text-gray-500">{filteredTokens.length} tokens</span>
+          )}
+        </div>
       </div>
 
       {/* Token List */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="animate-spin text-claw-primary" size={32} />
-          <p className="text-gray-400">Loading real token data...</p>
+          <p className="text-gray-400">Loading from GeckoTerminal...</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <AlertCircle className="text-red-400" size={32} />
           <p className="text-red-400">{error}</p>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={handleRefresh}
             className="text-sm text-claw-primary hover:underline"
           >
             Try again
@@ -284,7 +304,8 @@ export default function TokensTab() {
       ) : filteredTokens.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Coins className="text-gray-500" size={32} />
-          <p className="text-gray-400">No tokens found</p>
+          <p className="text-gray-400">No tokens found on this tab</p>
+          <p className="text-sm text-gray-500">Try the Trending tab or search by contract</p>
         </div>
       ) : (
         <div className="space-y-3">

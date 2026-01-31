@@ -1,26 +1,117 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { ShoppingBag, Rocket, Crown, Zap, Star, Check, Search, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ShoppingBag, Rocket, Crown, Zap, Star, Check, Search, Sparkles, Loader2, AlertCircle } from 'lucide-react'
 import { BOOST_TIERS } from '@/types'
+import BoostPaymentModal from '@/components/ui/BoostPaymentModal'
 
 type ShopSection = 'boosters' | 'subscription'
+
+interface SearchedToken {
+  address: string
+  name: string
+  symbol: string
+  chain: string
+  imageUrl: string | null
+}
 
 export default function ShopTab() {
   const [activeSection, setActiveSection] = useState<ShopSection>('boosters')
   const [searchToken, setSearchToken] = useState('')
-  const [selectedTier, setSelectedTier] = useState<number | null>(null)
+  const [selectedToken, setSelectedToken] = useState<SearchedToken | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [paymentModal, setPaymentModal] = useState<{
+    open: boolean
+    tier: number
+    price: number
+    token: SearchedToken | null
+  }>({
+    open: false,
+    tier: 1,
+    price: 1,
+    token: null
+  })
 
-  const handleBoostPurchase = (tier: number) => {
-    setSelectedTier(tier)
-    // TODO: Implement boost purchase flow
-    alert(`Selected Booster ${tier}! Token search: ${searchToken}\n\nPayment integration coming in Phase 2`)
+  // Search token by address
+  const handleSearchToken = async () => {
+    if (!searchToken.trim()) return
+    
+    const isAddress = searchToken.toLowerCase().startsWith('0x') && searchToken.length === 42
+    if (!isAddress) {
+      setSearchError('Please enter a valid contract address (0x...)')
+      return
+    }
+
+    setSearching(true)
+    setSearchError(null)
+    setSelectedToken(null)
+
+    try {
+      // Try Base first
+      let res = await fetch(`/api/tokens/search?address=${searchToken}&chain=base`)
+      let data = await res.json()
+      
+      if (data.success && data.token) {
+        setSelectedToken({
+          address: data.token.address,
+          name: data.token.name,
+          symbol: data.token.symbol,
+          chain: data.token.chain,
+          imageUrl: data.token.imageUrl
+        })
+      } else {
+        // Try Zora
+        res = await fetch(`/api/tokens/search?address=${searchToken}&chain=zora`)
+        data = await res.json()
+        
+        if (data.success && data.token) {
+          setSelectedToken({
+            address: data.token.address,
+            name: data.token.name,
+            symbol: data.token.symbol,
+            chain: data.token.chain,
+            imageUrl: data.token.imageUrl
+          })
+        } else {
+          setSearchError('Token not found on Base or Zora')
+        }
+      }
+    } catch (err) {
+      console.error('Search error:', err)
+      setSearchError('Failed to search token')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  const handleBoostPurchase = (tier: number, price: number) => {
+    if (!selectedToken) return
+    
+    setPaymentModal({
+      open: true,
+      tier,
+      price,
+      token: selectedToken
+    })
   }
 
   const handleSubscription = (plan: 'trial' | 'premium') => {
-    // TODO: Implement subscription flow
-    alert(`Selected ${plan} subscription!\n\nPayment integration coming in Phase 2`)
+    // Open payment modal for subscription
+    const price = plan === 'trial' ? 1 : 15
+    setPaymentModal({
+      open: true,
+      tier: plan === 'trial' ? 0 : -1, // Special tier for subscriptions
+      price,
+      token: {
+        address: '0x0000000000000000000000000000000000000000',
+        name: plan === 'trial' ? 'Trial Subscription' : 'Premium Subscription',
+        symbol: 'SUB',
+        chain: 'base',
+        imageUrl: null
+      }
+    })
   }
 
   const getTierIcon = (tier: number) => {
@@ -92,26 +183,57 @@ export default function ShopTab() {
         <>
           {/* Token Search */}
           <div className="card">
-            <p className="text-sm text-gray-400 mb-2">Search token to boost:</p>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Enter token address or name..."
-                value={searchToken}
-                onChange={(e) => setSearchToken(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-claw-darker border border-white/10 rounded-xl focus:outline-none focus:border-claw-primary transition-colors"
-              />
+            <p className="text-sm text-gray-400 mb-2">Search token to boost (paste contract address):</p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="0x..."
+                  value={searchToken}
+                  onChange={(e) => {
+                    setSearchToken(e.target.value)
+                    setSearchError(null)
+                    if (!e.target.value) setSelectedToken(null)
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchToken()}
+                  className="w-full pl-12 pr-4 py-3 bg-claw-darker border border-white/10 rounded-xl focus:outline-none focus:border-claw-primary transition-colors"
+                />
+              </div>
+              <button
+                onClick={handleSearchToken}
+                disabled={searching || !searchToken.trim()}
+                className="px-4 py-3 bg-claw-primary rounded-xl font-medium hover:bg-claw-primary/80 transition-colors disabled:opacity-50"
+              >
+                {searching ? <Loader2 size={20} className="animate-spin" /> : 'Find'}
+              </button>
             </div>
-            {searchToken && (
-              <div className="mt-3 p-3 bg-claw-darker rounded-xl border border-white/10">
+            
+            {searchError && (
+              <div className="flex items-center gap-2 text-red-400 text-sm mt-2">
+                <AlertCircle size={16} />
+                <span>{searchError}</span>
+              </div>
+            )}
+            
+            {selectedToken && (
+              <div className="mt-3 p-3 bg-claw-darker rounded-xl border border-green-500/30">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-claw-primary/30 flex items-center justify-center">
-                    <Sparkles size={20} className="text-claw-primary" />
+                  <img
+                    src={selectedToken.imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${selectedToken.address}`}
+                    alt={selectedToken.name}
+                    className="w-12 h-12 rounded-full bg-claw-dark"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${selectedToken.address}`
+                    }}
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{selectedToken.name}</p>
+                    <p className="text-sm text-gray-400">${selectedToken.symbol} • {selectedToken.chain}</p>
                   </div>
-                  <div>
-                    <p className="font-medium">{searchToken}</p>
-                    <p className="text-sm text-green-400">✓ Token verified</p>
+                  <div className="text-green-400 flex items-center gap-1">
+                    <Check size={18} />
+                    <span className="text-sm">Ready</span>
                   </div>
                 </div>
               </div>
@@ -154,15 +276,15 @@ export default function ShopTab() {
                       ))}
                     </ul>
                     <button
-                      onClick={() => handleBoostPurchase(tier.tier)}
-                      disabled={!searchToken}
+                      onClick={() => handleBoostPurchase(tier.tier, tier.price)}
+                      disabled={!selectedToken}
                       className={`mt-4 w-full py-3 rounded-xl font-semibold transition-all ${
-                        searchToken
+                        selectedToken
                           ? `bg-gradient-to-r ${getTierGradient(tier.tier)} text-white hover:opacity-90`
                           : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      {searchToken ? `Boost for $${tier.price}` : 'Search token first'}
+                      {selectedToken ? `Boost for $${tier.price}` : 'Search token first'}
                     </button>
                   </div>
                 </div>
@@ -204,7 +326,7 @@ export default function ShopTab() {
               onClick={() => handleSubscription('trial')}
               className="w-full btn-outline"
             >
-              Start Trial
+              Start Trial - $1
             </button>
           </motion.div>
 
@@ -254,10 +376,27 @@ export default function ShopTab() {
               onClick={() => handleSubscription('premium')}
               className="w-full btn-primary"
             >
-              Subscribe Now
+              Subscribe Now - $15/mo
             </button>
           </motion.div>
         </div>
+      )}
+
+      {/* Payment Modal */}
+      {paymentModal.token && (
+        <BoostPaymentModal
+          isOpen={paymentModal.open}
+          onClose={() => setPaymentModal({ ...paymentModal, open: false })}
+          token={paymentModal.token}
+          tier={paymentModal.tier}
+          price={paymentModal.price}
+          onSuccess={() => {
+            // Boost successful - could redirect or show success
+            setPaymentModal({ ...paymentModal, open: false })
+            setSelectedToken(null)
+            setSearchToken('')
+          }}
+        />
       )}
     </motion.div>
   )
