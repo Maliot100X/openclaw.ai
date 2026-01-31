@@ -1,10 +1,12 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { TrendingUp, TrendingDown, ExternalLink, Copy, Check, ChevronDown, ChevronUp, Droplets, DollarSign } from 'lucide-react'
-import { useState } from 'react'
+import { TrendingUp, TrendingDown, Rocket, ExternalLink, ShoppingCart, DollarSign } from 'lucide-react'
 import type { Token } from '@/types'
+import { useState } from 'react'
 import SwapModal from './SwapModal'
+import BoostPaymentModal from './BoostPaymentModal'
+import { BOOST_TIERS } from '@/types'
 
 interface CoinCardProps {
   token: Token
@@ -12,60 +14,55 @@ interface CoinCardProps {
   showBoostButton?: boolean
   showBuySell?: boolean
   showBoostPrices?: boolean
-  compact?: boolean
 }
 
 export default function CoinCard({ 
   token, 
   index = 0, 
-  showBoostButton = true,
-  showBuySell = true,
-  showBoostPrices = true,
-  compact = false
+  showBoostButton = false,
+  showBuySell = false,
+  showBoostPrices = false,
 }: CoinCardProps) {
-  const [copied, setCopied] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  const [swapModal, setSwapModal] = useState<{ open: boolean; mode: 'buy' | 'sell' }>({ open: false, mode: 'buy' })
-
+  const [showSwapModal, setShowSwapModal] = useState(false)
+  const [swapMode, setSwapMode] = useState<'buy' | 'sell'>('buy')
+  const [showBoostModal, setShowBoostModal] = useState(false)
+  const [selectedTier, setSelectedTier] = useState(1)
+  const [showTierSelect, setShowTierSelect] = useState(false)
+  
   const priceChange = token.priceChange24h || 0
   const isPositive = priceChange >= 0
 
-  const copyAddress = () => {
-    navigator.clipboard.writeText(token.address)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleBuy = () => {
+    setSwapMode('buy')
+    setShowSwapModal(true)
   }
 
-  const formatNumber = (num: number | undefined) => {
-    if (!num) return '$0'
-    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
-    if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
-    if (num >= 1000) return `$${(num / 1000).toFixed(2)}K`
-    return `$${num.toFixed(2)}`
+  const handleSell = () => {
+    setSwapMode('sell')
+    setShowSwapModal(true)
   }
 
-  const formatPrice = (price: number | undefined) => {
-    if (!price) return '$0.00'
-    if (price < 0.000001) return `$${price.toExponential(2)}`
-    if (price < 0.01) return `$${price.toFixed(6)}`
-    if (price < 1) return `$${price.toFixed(4)}`
-    return `$${price.toFixed(2)}`
+  const handleBoost = (tier: number = 1) => {
+    setSelectedTier(tier)
+    setShowBoostModal(true)
+    setShowTierSelect(false)
   }
 
   const getExplorerUrl = () => {
-    const chain = token.chain?.toLowerCase()
-    if (chain === 'zora') {
+    if (token.chain === 'zora') {
       return `https://explorer.zora.energy/token/${token.address}`
     }
     return `https://basescan.org/token/${token.address}`
   }
 
-  const getImageUrl = () => {
-    if (token.imageUrl && !token.imageUrl.includes('undefined')) {
-      return token.imageUrl
+  const getDexUrl = () => {
+    if (token.chain === 'zora') {
+      return `https://app.uniswap.org/swap?chain=zora&outputCurrency=${token.address}`
     }
-    return `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}`
+    return `https://app.uniswap.org/swap?chain=base&outputCurrency=${token.address}`
   }
+
+  const selectedTierData = BOOST_TIERS.find(t => t.tier === selectedTier) || BOOST_TIERS[0]
 
   return (
     <>
@@ -73,184 +70,173 @@ export default function CoinCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
-        className={`card-hover ${compact ? 'p-3' : 'p-4'}`}
+        className="card-hover"
       >
-        {/* Main Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Token Image */}
-            <div className="relative">
-              <img
-                src={getImageUrl()}
-                alt={token.name}
-                className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-claw-dark`}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}`
-                }}
-              />
-              {token.verified && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Check size={10} />
-                </div>
+        <div className="flex items-center gap-3">
+          {/* Token Image */}
+          <div className="relative">
+            <img
+              src={token.imageUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}`}
+              alt={token.name}
+              className="w-12 h-12 rounded-full bg-claw-dark"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}`
+              }}
+            />
+            {/* Chain indicator */}
+            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs border-2 border-claw-darker ${
+              token.chain === 'zora' ? 'bg-purple-500' : 'bg-blue-500'
+            }`}>
+              {token.chain === 'zora' ? '🟣' : '🔵'}
+            </div>
+          </div>
+
+          {/* Token Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold truncate">{token.name}</span>
+              <span className="text-gray-400 text-sm">${token.symbol}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-mono">
+                ${token.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }) || '0.00'}
+              </span>
+              {priceChange !== 0 && (
+                <span className={`flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                  {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {Math.abs(priceChange).toFixed(2)}%
+                </span>
               )}
             </div>
-
-            {/* Token Info */}
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold">{token.name}</span>
-                <span className="text-xs px-1.5 py-0.5 bg-white/10 rounded text-gray-400">
-                  {token.chain?.toUpperCase()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span>${token.symbol}</span>
-                <span>•</span>
-                <span>{formatPrice(token.price)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Price Change */}
-          <div className="text-right">
-            <div className={`flex items-center gap-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-              {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              <span className="font-bold">
-                {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
-              </span>
-            </div>
-            {!compact && (
-              <p className="text-xs text-gray-500">24h</p>
+            {token.marketCap && (
+              <p className="text-xs text-gray-500">
+                MCap: ${(token.marketCap / 1000000).toFixed(2)}M
+              </p>
             )}
           </div>
-        </div>
 
-        {/* Stats Row */}
-        {!compact && (
-          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-            <div className="flex items-center gap-1">
-              <DollarSign size={12} />
-              <span>Vol: {formatNumber(token.volume24h)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Droplets size={12} />
-              <span>Liq: {formatNumber(token.liquidity)}</span>
-            </div>
-            {token.fdv && token.fdv > 0 && (
-              <span>FDV: {formatNumber(token.fdv)}</span>
-            )}
-          </div>
-        )}
-
-        {/* Buy/Sell Buttons - Always visible */}
-        {showBuySell && (
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => setSwapModal({ open: true, mode: 'buy' })}
-              className="flex-1 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg text-sm font-bold transition-colors"
-            >
-              Buy
-            </button>
-            <button
-              onClick={() => setSwapModal({ open: true, mode: 'sell' })}
-              className="flex-1 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm font-bold transition-colors"
-            >
-              Sell
-            </button>
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            {/* Explorer Link */}
             <a
               href={getExplorerUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              onClick={(e) => e.stopPropagation()}
             >
-              <ExternalLink size={16} />
+              <ExternalLink size={16} className="text-gray-400" />
             </a>
           </div>
-        )}
+        </div>
 
-        {/* Expandable Boost Section */}
-        {showBoostPrices && (
-          <div className="mt-3">
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="flex items-center justify-between w-full py-2 px-3 bg-claw-primary/10 hover:bg-claw-primary/20 rounded-lg transition-colors"
-            >
-              <span className="text-sm font-medium text-claw-primary">🦀 Boost this coin</span>
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-
-            {expanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="mt-2 space-y-2"
-              >
-                <button className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg text-left transition-colors group">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold">Boost I</p>
-                      <p className="text-xs text-gray-400">10 min spotlight</p>
-                    </div>
-                    <span className="text-lg font-bold text-green-400 group-hover:scale-110 transition-transform">$1</span>
-                  </div>
-                </button>
-                <button className="w-full p-3 bg-claw-primary/10 hover:bg-claw-primary/20 rounded-lg text-left transition-colors group border border-claw-primary/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-claw-primary">ClawKing 👑</p>
-                      <p className="text-xs text-gray-400">25 min visibility</p>
-                    </div>
-                    <span className="text-lg font-bold text-claw-primary group-hover:scale-110 transition-transform">$3</span>
-                  </div>
-                </button>
-                <button className="w-full p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 rounded-lg text-left transition-colors group border border-yellow-500/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-yellow-400">Jetted King 🚀</p>
-                      <p className="text-xs text-gray-400">Global + notifications</p>
-                    </div>
-                    <span className="text-lg font-bold text-yellow-400 group-hover:scale-110 transition-transform">$6</span>
-                  </div>
-                </button>
-              </motion.div>
-            )}
+        {/* Action Buttons */}
+        {(showBuySell || showBoostButton) && (
+          <div className="mt-3 pt-3 border-t border-white/10">
+            <div className="flex gap-2">
+              {showBuySell && (
+                <>
+                  <button
+                    onClick={handleBuy}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors text-sm font-medium"
+                  >
+                    <ShoppingCart size={16} />
+                    Buy
+                  </button>
+                  <button
+                    onClick={handleSell}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm font-medium"
+                  >
+                    <DollarSign size={16} />
+                    Sell
+                  </button>
+                </>
+              )}
+              {showBoostButton && (
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => setShowTierSelect(!showTierSelect)}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-claw-primary/20 text-claw-primary rounded-lg hover:bg-claw-primary/30 transition-colors text-sm font-medium"
+                  >
+                    <Rocket size={16} />
+                    Boost
+                  </button>
+                  
+                  {/* Tier Selection Dropdown */}
+                  {showTierSelect && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute bottom-full left-0 right-0 mb-2 bg-claw-dark border border-white/20 rounded-xl overflow-hidden shadow-xl z-50"
+                    >
+                      {BOOST_TIERS.map((tier) => (
+                        <button
+                          key={tier.tier}
+                          onClick={() => handleBoost(tier.tier)}
+                          className={`w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-0 ${
+                            tier.tier === 3 ? 'bg-yellow-500/10' : ''
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{tier.name}</span>
+                            <span className="text-claw-primary font-bold">${tier.price}</span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">{tier.description}</p>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Contract Address */}
-        {!compact && (
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
-            <span className="text-xs text-gray-500 font-mono">
-              {token.address?.slice(0, 6)}...{token.address?.slice(-4)}
-            </span>
-            <button
-              onClick={copyAddress}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              {copied ? (
-                <><Check size={12} className="text-green-500" /> Copied!</>
-              ) : (
-                <><Copy size={12} /> Copy</>
-              )}
-            </button>
+        {/* Boost Prices Display */}
+        {showBoostPrices && !showBoostButton && (
+          <div className="mt-2 flex gap-2">
+            {BOOST_TIERS.map((tier) => (
+              <button
+                key={tier.tier}
+                onClick={() => handleBoost(tier.tier)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  tier.tier === 1 ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' :
+                  tier.tier === 2 ? 'bg-claw-primary/20 text-claw-primary hover:bg-claw-primary/30' :
+                  'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                }`}
+              >
+                ${tier.price} / {tier.durationMinutes}min
+              </button>
+            ))}
           </div>
         )}
       </motion.div>
 
       {/* Swap Modal */}
       <SwapModal
-        isOpen={swapModal.open}
-        onClose={() => setSwapModal({ ...swapModal, open: false })}
+        isOpen={showSwapModal}
+        onClose={() => setShowSwapModal(false)}
+        token={token}
+        mode={swapMode}
+      />
+
+      {/* Boost Payment Modal */}
+      <BoostPaymentModal
+        isOpen={showBoostModal}
+        onClose={() => setShowBoostModal(false)}
         token={{
           address: token.address,
           name: token.name,
           symbol: token.symbol,
           chain: token.chain,
-          price: token.price || 0,
-          imageUrl: token.imageUrl,
+          imageUrl: token.imageUrl || null,
         }}
-        mode={swapModal.mode}
+        tier={selectedTier}
+        price={selectedTierData.price}
+        onSuccess={() => {
+          setShowBoostModal(false)
+          // Could trigger a refresh or show success toast
+        }}
       />
     </>
   )
