@@ -338,8 +338,12 @@ export default function ProfileTab() {
     localStorage.setItem('clawai_social_connections', JSON.stringify(newSocials))
   }
 
-  const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`
-  const filteredHoldings = holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin)
+  const formatAddress = (address: string) => {
+    if (!address) return '';
+    return address.slice(0, 6) + '...' + address.slice(-4);
+  };
+
+  const filteredHoldings = holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin);
 
   return (
     <div className="p-4 pb-24">
