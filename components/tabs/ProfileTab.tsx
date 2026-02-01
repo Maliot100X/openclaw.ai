@@ -343,7 +343,12 @@ export default function ProfileTab() {
     return address.slice(0, 6) + '...' + address.slice(-4);
   };
 
-  const filteredHoldings = holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin);
+  // Calculate filtered holdings
+  const getFilteredHoldings = () => {
+    return holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin);
+  };
+
+  const filteredHoldings = getFilteredHoldings();
 
   return (
     <div className="p-4 pb-24">
