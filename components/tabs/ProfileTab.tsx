@@ -397,7 +397,7 @@ export default function ProfileTab() {
                     <span className="text-green-400 text-sm">✓ Connected</span>
                   </div>
                 ))}
-                x            <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4">
                   <button onClick={() => setHoldingsFilter('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>All Coins</button>
                   <button onClick={() => setHoldingsFilter('app')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'app' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>App Coins</button>
                 </div>
