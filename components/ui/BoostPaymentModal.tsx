@@ -240,10 +240,23 @@ export default function BoostPaymentModal({
         throw new Error('No wallet provider available')
       }
 
-      // CRITICAL: Ensure we're on Base BEFORE sending transaction
+      // CRITICAL: Enforce Base Chain ID (8453)
       const onBase = await ensureBaseChain(provider)
-      if (!onBase) {
-        throw new Error('Transaction requires Base network. Please switch to Base.')
+      // Double check directly
+      const currentChainId = await provider.request({ method: 'eth_chainId' })
+      const isBaseHex = currentChainId === '0x2105'
+      const isBaseDec = Number(currentChainId) === 8453
+
+      if (!onBase || (!isBaseHex && !isBaseDec)) {
+        // Final attempt to force switch
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+          })
+        } catch (e) {
+          throw new Error('CRITICAL: Transaction blocked. You are NOT on Base Mainnet (Chain ID 8453).')
+        }
       }
 
       // Create transaction data

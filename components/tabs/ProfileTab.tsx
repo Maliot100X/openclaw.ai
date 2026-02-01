@@ -86,6 +86,9 @@ export default function ProfileTab() {
   const syncFarcaster = async () => {
     setIsSyncing(true)
     try {
+      // Force ready signal before requesting context
+      try { sdk.actions.ready() } catch (e) { console.debug('Ready signal already sent') }
+
       const context = await sdk.context
       console.log('[Profile] Farcaster context:', context)
 
