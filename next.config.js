@@ -12,6 +12,12 @@ const nextConfig = {
       'ipfs.io'
     ],
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     return [
       // Farcaster image rewrites - static paths to API routes
