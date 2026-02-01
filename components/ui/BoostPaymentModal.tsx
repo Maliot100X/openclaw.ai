@@ -259,6 +259,22 @@ export default function BoostPaymentModal({
         }
       }
 
+      // SAFETY CHECK: Gas Price Sanity
+      // Base usage is cheap. If gas > $5, we are likely on L1.
+      try {
+        const gasPrice = await provider.request({ method: 'eth_gasPrice' })
+        const gasLimit = '0x186A0' // 100,000 gas buffer
+        const estimatedFeeWei = BigInt(gasPrice) * BigInt(gasLimit)
+
+        // Approx 0.002 ETH ($5-6) is WAY too high for Base simple tx
+        if (estimatedFeeWei > BigInt(2000000000000000)) {
+          throw new Error('CRITICAL: High network fee detected. You are likely on Ethereum Mainnet, not Base. Transaction blocked for your safety.')
+        }
+      } catch (e: any) {
+        if (e.message.includes('CRITICAL')) throw e
+        // Ignore other gas errors, proceed with chain ID check
+      }
+
       // Create transaction data
       const dataString = isSubscription
         ? `subscription:${tier === 0 ? 'trial' : 'premium'}:${walletAddress}`

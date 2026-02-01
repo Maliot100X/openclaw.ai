@@ -91,7 +91,7 @@ export default function ShareEarnTab({ onBack }: ShareEarnTabProps) {
         try {
           const accounts = await (window as any).ethereum.request({ method: 'eth_accounts' })
           if (accounts?.[0]) setWalletAddress(accounts[0])
-        } catch {}
+        } catch { }
       }
     }
   }
@@ -167,7 +167,28 @@ export default function ShareEarnTab({ onBack }: ShareEarnTabProps) {
   const verifyFarcasterFollow = async (): Promise<boolean> => true
   const verifyTwitterAction = async (): Promise<boolean> => true
   const verifyGithubStar = async (): Promise<boolean> => { try { const r = await fetch('https://api.github.com/repos/Maliot100X/openclaw.ai/stargazers'); return r.ok } catch { return true } }
-  const verifyBaseTransaction = async (): Promise<boolean> => walletAddress ? true : false
+  const verifyBaseTransaction = async (): Promise<boolean> => {
+    if (!walletAddress) return false
+    try {
+      // Trigger a 0 ETH self-transfer to prove active wallet
+      const provider = sdk.wallet.ethProvider || (window as any).ethereum
+      if (!provider) return false
+
+      const tx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: walletAddress,
+          to: walletAddress, // Self-transfer
+          value: '0x0', // 0 ETH
+          data: '0x',
+        }]
+      })
+      return !!tx
+    } catch (e) {
+      console.error('Verification tx failed', e)
+      return false
+    }
+  }
 
   const farcasterTasks: Task[] = [
     { id: 'fc_share_daily', category: 'farcaster', title: 'Share on Farcaster', description: `Post about ClawAI and mention @${FARCASTER_USERNAME}`, points: 150, icon: Share2, completed: !isTaskAvailable('fc_share_daily', 12), cooldownHours: 12, requiresVerification: true, action: shareOnFarcaster, verify: verifyFarcasterShare },

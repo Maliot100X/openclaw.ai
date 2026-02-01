@@ -399,17 +399,32 @@ export default function ProfileTab() {
                 ))}
               </div>
             )}
+            {/* WALLET CONNECTIONS - STRICTLY SEGREGATED */}
             <div className="space-y-3 mt-6">
-              {/* Only show Connect Base if NO wallet is connected (Farcaster counts as connected in Mini App) */}
-              {!wallets.some(w => w.type === 'base' || w.type === 'farcaster') && (
-                <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
-                  {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
-                </button>
+
+              {/* WEB context only: Show explicit connect buttons */}
+              {!inMiniApp && (
+                <>
+                  {!wallets.some(w => w.type === 'base') && (
+                    <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                      {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
+                    </button>
+                  )}
+
+                  {!wallets.some(w => w.connected) && (
+                    <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                      {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
+                    </button>
+                  )}
+                </>
               )}
-              {!inMiniApp && !wallets.some(w => w.connected) && (
-                <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
-                  {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
-                </button>
+
+              {/* MINI APP context: Auto-handled by SDK, show status only */}
+              {inMiniApp && !wallets.some(w => w.connected) && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center">
+                  <p className="text-blue-400 text-sm">Farcaster Wallet Detected</p>
+                  <p className="text-xs text-gray-500 mt-1">Your profile and wallet are syncing...</p>
+                </div>
               )}
             </div>
             {wallets.length === 0 && <div className="text-center py-8"><p className="text-gray-400">No wallets connected yet</p><p className="text-gray-500 text-sm mt-2">Connect a wallet to start boosting tokens!</p></div>}
