@@ -1,0 +1,21 @@
+{
+    "name": "ClawAI King Booster",
+    "short_name": "ClawAI",
+    "description": "Boost your coins to the top! A Farcaster Mini App for token discovery and promotion on Base.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0D0D1A",
+    "theme_color": "#0D0D1A",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

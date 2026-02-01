@@ -66,6 +66,7 @@ export default function RootLayout({
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="ClawAI King Booster - Boost your coins to the top!" />
         <meta name="theme-color" content="#0D0D1A" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${inter.variable} antialiased bg-claw-darker text-white`}>
         <Providers>{children}</Providers>

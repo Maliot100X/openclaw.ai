@@ -48,40 +48,36 @@ export default function ProfileTab() {
   ])
 
   useEffect(() => {
+    // Immediate check for Mini App context
+    if (typeof window !== 'undefined') {
+      const isFrame = window.self !== window.top // Iframe check
+      const urlParams = new URLSearchParams(window.location.search)
+      const hasFid = urlParams.has('fid')
+
+      if (isFrame || hasFid) {
+        console.log('[Profile] Detailed Context: Mini App detected via iframe/params')
+        setInMiniApp(true)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     initProfile()
     loadUserPoints()
   }, [])
 
-  const loadUserPoints = () => {
-    const savedTasks = localStorage.getItem('clawai_tasks_v2')
-    if (savedTasks) {
-      const data = JSON.parse(savedTasks)
-      setUserPoints(data.points || 0)
-    }
-  }
-
   const initProfile = async () => {
     try {
-      // Small delay to ensure SDK is ready
-      setTimeout(async () => {
-        try {
-          const context = await sdk.context
-          if (context?.user) {
-            setInMiniApp(true)
-            await syncFarcaster()
-          } else {
-            // Check frame context/params fallback
-            const urlParams = new URLSearchParams(window.location.search)
-            if (urlParams.has('fid')) {
-              setInMiniApp(true)
-            }
-          }
-        } catch (e) {
-          console.warn('[Profile] Context check failed:', e)
-        }
-      }, 500)
+      // Force ready again just in case
+      try { sdk.actions.ready() } catch (e) { }
+
+      const context = await sdk.context
+      if (context?.user) {
+        setInMiniApp(true)
+        await syncFarcaster()
+      }
     } catch (e) {
-      console.log('[Profile] Not in Farcaster context')
+      console.warn('[Profile] Context check failed or timed out', e)
     }
 
     const savedSocials = localStorage.getItem('clawai_social_connections')
@@ -333,7 +329,14 @@ export default function ProfileTab() {
             <p className="text-gray-400 text-sm">@{farcasterUser?.username || 'anonymous'}</p>
             {farcasterUser?.fid && <p className="text-purple-400 text-xs mt-1">FID: {farcasterUser.fid}</p>}
           </div>
-          <button onClick={syncFarcaster} disabled={isSyncing} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+          <button
+            onClick={() => {
+              sdk.actions.ready() // Force ready signal on click
+              syncFarcaster()
+            }}
+            disabled={isSyncing}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+          >
             {isSyncing ? <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Syncing...</span> : <span className="flex items-center gap-2">🔄 Sync</span>}
           </button>
         </div>
@@ -372,12 +375,13 @@ export default function ProfileTab() {
               </div>
             )}
             <div className="space-y-3 mt-6">
-              {!wallets.find(w => w.type === 'base') && (
+              {/* Only show Connect Base if NO wallet is connected (Farcaster counts as connected in Mini App) */}
+              {!wallets.some(w => w.type === 'base' || w.type === 'farcaster') && (
                 <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
                   {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
                 </button>
               )}
-              {!inMiniApp && !wallets.find(w => w.type === 'metamask') && (
+              {!inMiniApp && !wallets.some(w => w.connected) && (
                 <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
                   {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
                 </button>
