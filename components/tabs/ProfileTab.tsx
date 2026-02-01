@@ -397,6 +397,53 @@ export default function ProfileTab() {
                     <span className="text-green-400 text-sm">✓ Connected</span>
                   </div>
                 ))}
+                {/* WALLET CONNECTIONS - STRICTLY SEGREGATED */}
+                <div className="space-y-3 mt-6 mb-6">
+
+                  {/* WEB context only: Show explicit connect buttons */}
+                  {!inMiniApp && (
+                    <>
+                      {!wallets.some(w => w.type === 'base') && (
+                        <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                          {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
+                        </button>
+                      )}
+
+                      {!wallets.some(w => w.connected) && (
+                        <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                          {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {/* MINI APP context: Active Sync Button */}
+                  {inMiniApp && !wallets.some(w => w.connected) && (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          syncFarcaster()
+                          connectBaseWallet()
+                        }}
+                        disabled={isSyncing || isConnecting === 'base'}
+                        className="w-full bg-claw-primary hover:bg-claw-primary/80 text-black font-bold rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+                      >
+                        {(isSyncing || isConnecting === 'base') ? (
+                          <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <span className="text-xl">🟣</span>
+                            <span>Sync Farcaster Profile</span>
+                          </>
+                        )}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center">
+                        Tap to load your profile and wallet
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2 mb-4">
                   <button onClick={() => setHoldingsFilter('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>All Coins</button>
                   <button onClick={() => setHoldingsFilter('app')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'app' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>App Coins</button>
