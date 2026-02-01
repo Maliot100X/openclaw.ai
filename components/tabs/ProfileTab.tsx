@@ -63,7 +63,6 @@ export default function ProfileTab() {
 
   useEffect(() => {
     initProfile()
-    loadUserPoints()
   }, [])
 
   const initProfile = async () => {
