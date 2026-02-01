@@ -212,8 +212,19 @@ export default function ProfileTab() {
                 })
               }
             }
-            setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
-            await loadHoldings(accounts[0])
+            // SIGN-IN ENFORCEMENT
+            const message = `Sign in to ClawAI King Booster\nNonce: ${Date.now()}`
+            try {
+              await provider.request({
+                method: 'personal_sign',
+                params: [message, accounts[0]]
+              })
+              setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
+              await loadHoldings(accounts[0])
+            } catch (err) {
+              console.error('User rejected sign-in')
+              return
+            }
           }
         }
       } else {
@@ -239,8 +250,20 @@ export default function ProfileTab() {
             }
           }
           if (accounts?.length > 0) {
-            setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
-            await loadHoldings(accounts[0])
+            // SIGN-IN ENFORCEMENT
+            const message = `Sign in to ClawAI King Booster\nNonce: ${Date.now()}`
+            try {
+              await ethereum.request({
+                method: 'personal_sign',
+                params: [message, accounts[0]]
+              })
+              // Only set connected if signed
+              setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
+              await loadHoldings(accounts[0])
+            } catch (err) {
+              console.error('User rejected sign-in')
+              return // Stop connection if rejected
+            }
           }
         } else {
           window.open('https://metamask.io/download/', '_blank')
