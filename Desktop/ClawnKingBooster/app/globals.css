@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --claw-primary: #FF6B35;
+  --claw-secondary: #7C3AED;
+  --claw-dark: #1A1A2E;
+  --claw-darker: #0F0F1A;
+  --claw-accent: #00D9FF;
+}
+
+body {
+  background: linear-gradient(180deg, var(--claw-darker) 0%, var(--claw-dark) 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--claw-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--claw-primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff8555;
+}
+
+/* Animations */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 107, 53, 0.8);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--claw-primary), var(--claw-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-claw-primary hover:bg-claw-primary/80 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-claw-primary/30;
+}
+
+.btn-secondary {
+  @apply bg-claw-secondary hover:bg-claw-secondary/80 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200;
+}
+
+.btn-outline {
+  @apply border-2 border-claw-primary text-claw-primary hover:bg-claw-primary hover:text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200;
+}
+
+/* Card styles */
+.card {
+  @apply bg-claw-dark/80 backdrop-blur-md border border-white/10 rounded-2xl p-4;
+}
+
+.card-hover {
+  @apply card hover:border-claw-primary/50 transition-all duration-300 cursor-pointer;
+}
+
+/* Tab content area - account for bottom nav */
+.tab-content {
+  padding-bottom: 100px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Shimmer loading effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
