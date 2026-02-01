@@ -53,7 +53,7 @@ export default function BoostPaymentModal({
 
   // ALWAYS use Base chain for payments (cheap gas!)
   const chainConfig = CHAINS.BASE
-  const BASE_CHAIN_ID = '0x2105' // 8453
+  const BASE_CHAIN_ID = `0x${CHAINS.BASE.id.toString(16)}`
 
   const finalPrice = propPrice ?? tierInfo.price
 
@@ -175,8 +175,8 @@ export default function BoostPaymentModal({
               chainId: BASE_CHAIN_ID,
               chainName: 'Base',
               nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://mainnet.base.org'],
-              blockExplorerUrls: ['https://basescan.org'],
+              rpcUrls: [CHAINS.BASE.rpc],
+              blockExplorerUrls: [CHAINS.BASE.explorer],
             }],
           })
 
@@ -529,12 +529,12 @@ export default function BoostPaymentModal({
             onClick={handlePayment}
             disabled={status === 'processing' || status === 'success' || status === 'switching'}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${status === 'processing' || status === 'confirming' || status === 'switching'
-                ? 'bg-gray-600 cursor-not-allowed'
-                : tier === 3 || isSubscription
-                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
-                  : tier === 2
-                    ? 'bg-claw-primary hover:bg-claw-primary/80'
-                    : 'bg-blue-500 hover:bg-blue-600'
+              ? 'bg-gray-600 cursor-not-allowed'
+              : tier === 3 || isSubscription
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
+                : tier === 2
+                  ? 'bg-claw-primary hover:bg-claw-primary/80'
+                  : 'bg-blue-500 hover:bg-blue-600'
               }`}
           >
             {status === 'connecting' && (

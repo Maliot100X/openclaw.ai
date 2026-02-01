@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import sdk from '@farcaster/frame-sdk'
 import { FarcasterUser } from '@/types'
+import { CHAINS } from '@/lib/constants'
 
 interface Wallet {
   address: string
@@ -198,12 +199,21 @@ export default function ProfileTab() {
           const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[]
           if (accounts?.length > 0) {
             try {
-              await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] })
+              // Strict Base Mainnet enforcement (8453 = 0x2105)
+              const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
+              await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] })
             } catch (e: any) {
               if (e.code === 4902) {
+                const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
                 await provider.request({
                   method: 'wallet_addEthereumChain',
-                  params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }],
+                  params: [{
+                    chainId: chainIdHex,
+                    chainName: CHAINS.BASE.name,
+                    nativeCurrency: CHAINS.BASE.nativeCurrency,
+                    rpcUrls: [CHAINS.BASE.rpc],
+                    blockExplorerUrls: [CHAINS.BASE.explorer]
+                  }],
                 })
               }
             }
@@ -216,12 +226,20 @@ export default function ProfileTab() {
         if (ethereum) {
           const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
           try {
-            await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] })
+            const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
+            await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] })
           } catch (e: any) {
             if (e.code === 4902) {
+              const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
               await ethereum.request({
                 method: 'wallet_addEthereumChain',
-                params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }],
+                params: [{
+                  chainId: chainIdHex,
+                  chainName: CHAINS.BASE.name,
+                  nativeCurrency: CHAINS.BASE.nativeCurrency,
+                  rpcUrls: [CHAINS.BASE.rpc],
+                  blockExplorerUrls: [CHAINS.BASE.explorer]
+                }],
               })
             }
           }

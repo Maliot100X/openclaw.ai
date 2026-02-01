@@ -9,14 +9,16 @@ export const CHAINS = {
   BASE: {
     id: 8453,
     name: 'Base',
-    rpc: 'https://mainnet.base.org',
+    rpc: process.env.BASE_RPC || 'https://mainnet.base.org',
+    wss: process.env.BASE_WSS,
     explorer: 'https://basescan.org',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
   },
   ZORA: {
     id: 7777777,
     name: 'Zora',
-    rpc: 'https://rpc.zora.energy',
+    rpc: process.env.ZORA_RPC || 'https://rpc.zora.energy',
+    wss: process.env.ZORA_WSS,
     explorer: 'https://explorer.zora.energy',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
   },
