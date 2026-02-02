@@ -256,6 +256,99 @@ export default function ShareEarnTab({ onBack }: ShareEarnTabProps) {
     finally { setIsVerifying(null) }
   }
 
+  const handleStartTask = async (task: Task) => {
+    setIsStarting(task.id)
+    try {
+      if (task.action) await task.action()
+    } catch (e) {
+      console.error('Task action failed', e)
+    } finally {
+      setIsStarting(null)
+    }
+  }
+
+  const getTasksForCategory = (category: TaskCategory): Task[] => {
+    const tasks: Task[] = []
+
+    if (category === 'farcaster') {
+      tasks.push(
+        {
+          id: 'fc-share',
+          category: 'farcaster',
+          title: 'Share on Farcaster',
+          description: 'Share ClawAI King Booster with your followers',
+          points: 100,
+          icon: Share2,
+          completed: !!completedTasks['fc-share'] && !isTaskAvailable('fc-share', 24),
+          cooldownHours: 24,
+          requiresVerification: true,
+          action: shareOnFarcaster,
+          verify: verifyFarcasterShare
+        },
+        {
+          id: 'fc-follow',
+          category: 'farcaster',
+          title: 'Follow on Farcaster',
+          description: 'Follow @maliotsol for updates',
+          points: 50,
+          icon: MessageCircle,
+          completed: !!completedTasks['fc-follow'],
+          cooldownHours: 0,
+          requiresVerification: true,
+          action: followOnFarcaster,
+          verify: verifyFarcasterFollow
+        }
+      )
+    } else if (category === 'twitter') {
+      tasks.push(
+        {
+          id: 'tw-share',
+          category: 'twitter',
+          title: 'Share on X',
+          description: 'Spread the word about ClawAI',
+          points: 100,
+          icon: Twitter,
+          completed: !!completedTasks['tw-share'] && !isTaskAvailable('tw-share', 24),
+          cooldownHours: 24,
+          requiresVerification: true,
+          action: shareOnTwitter,
+          verify: verifyTwitterAction
+        },
+        {
+          id: 'tw-follow',
+          category: 'twitter',
+          title: 'Follow on X',
+          description: 'Follow @VoidDrillersX',
+          points: 50,
+          icon: Twitter,
+          completed: !!completedTasks['tw-follow'],
+          cooldownHours: 0,
+          requiresVerification: true,
+          action: followOnTwitter,
+          verify: verifyTwitterAction
+        }
+      )
+    } else if (category === 'base') {
+      tasks.push(
+        {
+          id: 'base-tx',
+          category: 'base',
+          title: 'Verify Base Wallet',
+          description: 'Send a 0 ETH transaction to prove wallet ownership',
+          points: 500,
+          icon: Shield,
+          completed: !!completedTasks['base-tx'],
+          cooldownHours: 0,
+          requiresVerification: true,
+          action: async () => { /* No action needed, user verifies directly */ },
+          verify: verifyBaseTransaction
+        }
+      )
+    }
+
+    return tasks
+  }
+
   const currentTasks = getTasksForCategory(activeCategory)
   const availableTasks = currentTasks.filter(t => isTaskAvailable(t.id, t.cooldownHours))
   const completedTasksList = currentTasks.filter(t => !isTaskAvailable(t.id, t.cooldownHours))
