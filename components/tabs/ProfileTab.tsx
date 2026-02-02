@@ -389,7 +389,7 @@ export default function ProfileTab() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-white mb-4">Connected Wallets</h3>
         {wallets.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-3 mb-6">
             {wallets.map((wallet, index) => (
               <div key={index} className="bg-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-green-500/30">
                 <div className="flex items-center gap-3">
@@ -401,68 +401,69 @@ export default function ProfileTab() {
                 <span className="text-green-400 text-sm">✓ Connected</span>
               </div>
             ))}
-            {/* WALLET CONNECTIONS - STRICTLY SEGREGATED */}
-            <div className="space-y-3 mt-6 mb-6">
-
-              {/* WEB context only: Show explicit connect buttons */}
-              {!inMiniApp && (
-                <>
-                  {!wallets.some(w => w.type === 'base') && (
-                    <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
-                      {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
-                    </button>
-                  )}
-
-                  {!wallets.some(w => w.connected) && (
-                    <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
-                      {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
-                    </button>
-                  )}
-                </>
-              )}
-
-              {/* MINI APP context: Active Sync Button */}
-              {inMiniApp && !wallets.some(w => w.connected) && (
-                <div className="space-y-3">
-                  <button
-                    onClick={() => {
-                      syncFarcaster()
-                      connectBaseWallet()
-                    }}
-                    disabled={isSyncing || isConnecting === 'base'}
-                    className="w-full bg-claw-primary hover:bg-claw-primary/80 text-black font-bold rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
-                  >
-                    {(isSyncing || isConnecting === 'base') ? (
-                      <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
-                    ) : (
-                      <>
-                        <span className="text-xl">🟣</span>
-                        <span>Sync Farcaster Profile</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-xs text-gray-500 text-center">
-                    Tap to load your profile and wallet
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setHoldingsFilter('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>All Coins</button>
-              <button onClick={() => setHoldingsFilter('app')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'app' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>App Coins</button>
-            </div>
-            {wallets.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">Connect a wallet to view holdings</p></div>
-              : isLoadingHoldings ? <div className="text-center py-8"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" /><p className="text-gray-400">Loading holdings...</p></div>
-                : visibleHoldings.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">{holdingsFilter === 'app' ? 'No app coins yet. Boost some tokens!' : 'No tokens found'}</p></div>
-                  : <div className="space-y-3">{visibleHoldings.map((token, index) => (
-                    <div key={index} className={`bg-gray-800/50 rounded-xl p-4 flex items-center justify-between ${token.isAppCoin ? 'border border-purple-500/30' : ''}`}>
-                      <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-full flex items-center justify-center ${token.isAppCoin ? 'bg-purple-900/50' : 'bg-gray-700'}`}><span className="text-lg">{token.symbol.slice(0, 2)}</span></div><div><p className="text-white font-medium">{token.symbol}</p><p className="text-gray-400 text-sm">{token.name}</p></div></div>
-                      <div className="text-right"><p className="text-white font-medium">{token.balance}</p>{token.value > 0 && <p className="text-gray-400 text-sm">${token.value.toFixed(2)}</p>}</div>
-                    </div>
-                  ))}</div>}
           </div>
         )}
+
+        {/* WALLET CONNECTIONS - STRICTLY SEGREGATED */}
+        <div className="space-y-3 mt-6 mb-6">
+
+          {/* WEB context only: Show explicit connect buttons */}
+          {!inMiniApp && (
+            <>
+              {!wallets.some(w => w.type === 'base') && (
+                <button onClick={connectBaseWallet} disabled={isConnecting === 'base'} className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                  {isConnecting === 'base' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🔵</span><span className="font-medium">Connect Base Wallet</span></>}
+                </button>
+              )}
+
+              {!wallets.some(w => w.connected) && (
+                <button onClick={connectMetaMask} disabled={isConnecting === 'metamask'} className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50">
+                  {isConnecting === 'metamask' ? <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><span className="text-xl">🦊</span><span className="font-medium">Connect MetaMask</span></>}
+                </button>
+              )}
+            </>
+          )}
+
+          {/* MINI APP context: Active Sync Button */}
+          {inMiniApp && !wallets.some(w => w.connected) && (
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  syncFarcaster()
+                  connectBaseWallet()
+                }}
+                disabled={isSyncing || isConnecting === 'base'}
+                className="w-full bg-claw-primary hover:bg-claw-primary/80 text-black font-bold rounded-xl p-4 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+              >
+                {(isSyncing || isConnecting === 'base') ? (
+                  <div className="animate-spin w-5 h-5 border-2 border-black border-t-transparent rounded-full" />
+                ) : (
+                  <>
+                    <span className="text-xl">🟣</span>
+                    <span>Sync Farcaster Profile</span>
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-gray-500 text-center">
+                Tap to load your profile and wallet
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setHoldingsFilter('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>All Coins</button>
+          <button onClick={() => setHoldingsFilter('app')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${holdingsFilter === 'app' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400'}`}>App Coins</button>
+        </div>
+        {wallets.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">Connect a wallet to view holdings</p></div>
+          : isLoadingHoldings ? <div className="text-center py-8"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" /><p className="text-gray-400">Loading holdings...</p></div>
+            : visibleHoldings.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">{holdingsFilter === 'app' ? 'No app coins yet. Boost some tokens!' : 'No tokens found'}</p></div>
+              : <div className="space-y-3">{visibleHoldings.map((token, index) => (
+                <div key={index} className={`bg-gray-800/50 rounded-xl p-4 flex items-center justify-between ${token.isAppCoin ? 'border border-purple-500/30' : ''}`}>
+                  <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-full flex items-center justify-center ${token.isAppCoin ? 'bg-purple-900/50' : 'bg-gray-700'}`}><span className="text-lg">{token.symbol.slice(0, 2)}</span></div><div><p className="text-white font-medium">{token.symbol}</p><p className="text-gray-400 text-sm">{token.name}</p></div></div>
+                  <div className="text-right"><p className="text-white font-medium">{token.balance}</p>{token.value > 0 && <p className="text-gray-400 text-sm">${token.value.toFixed(2)}</p>}</div>
+                </div>
+              ))}</div>}
       </div>
     )}
 
