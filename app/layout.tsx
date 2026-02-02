@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "@/lib/sdk-init"; // CRITICAL: Fire readiness signal before ANY React hydration
 import "./globals.css";
 import { Providers } from "./providers";
+import SDKInit from "@/components/SDKInit"; // Client component wrapper
 
 const inter = Inter({
   variable: "--font-inter",
@@ -70,6 +70,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${inter.variable} antialiased bg-claw-darker text-white`}>
+        <SDKInit />
         <Providers>{children}</Providers>
       </body>
     </html>
