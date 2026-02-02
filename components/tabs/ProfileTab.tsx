@@ -344,11 +344,8 @@ export default function ProfileTab() {
   };
 
   // Calculate filtered holdings
-  const getFilteredHoldings = () => {
-    return holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin);
-  };
-
-  const filteredHoldings = getFilteredHoldings();
+  // Calculate filtered holdings
+  const visibleHoldings = holdingsFilter === 'all' ? holdings : holdings.filter(h => h.isAppCoin);
 
   return (
     <div className="p-4 pb-24">
@@ -459,8 +456,8 @@ export default function ProfileTab() {
                 </div>
                 {wallets.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">Connect a wallet to view holdings</p></div>
                   : isLoadingHoldings ? <div className="text-center py-8"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" /><p className="text-gray-400">Loading holdings...</p></div>
-                    : filteredHoldings.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">{holdingsFilter === 'app' ? 'No app coins yet. Boost some tokens!' : 'No tokens found'}</p></div>
-                      : <div className="space-y-3">{filteredHoldings.map((token, index) => (
+                    : visibleHoldings.length === 0 ? <div className="text-center py-8 bg-gray-800/30 rounded-xl"><p className="text-gray-400">{holdingsFilter === 'app' ? 'No app coins yet. Boost some tokens!' : 'No tokens found'}</p></div>
+                      : <div className="space-y-3">{visibleHoldings.map((token, index) => (
                         <div key={index} className={`bg-gray-800/50 rounded-xl p-4 flex items-center justify-between ${token.isAppCoin ? 'border border-purple-500/30' : ''}`}>
                           <div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-full flex items-center justify-center ${token.isAppCoin ? 'bg-purple-900/50' : 'bg-gray-700'}`}><span className="text-lg">{token.symbol.slice(0, 2)}</span></div><div><p className="text-white font-medium">{token.symbol}</p><p className="text-gray-400 text-sm">{token.name}</p></div></div>
                           <div className="text-right"><p className="text-white font-medium">{token.balance}</p>{token.value > 0 && <p className="text-gray-400 text-sm">${token.value.toFixed(2)}</p>}</div>
