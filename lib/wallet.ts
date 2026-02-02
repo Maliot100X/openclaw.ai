@@ -62,11 +62,13 @@ export async function getProvider(): Promise<EIP1193Provider | null> {
         return provider as EIP1193Provider
       }
     } catch (e) {
-      console.log('[Wallet] Farcaster SDK not available, falling back')
+      console.log('[Wallet] Farcaster SDK not available')
     }
+    // STOP HERE for farcaster env - do not use window.ethereum
+    return null
   }
 
-  // Fallback to window.ethereum (MetaMask, etc)
+  // Fallback to window.ethereum (MetaMask, etc) - WEB ONLY
   if (typeof window !== 'undefined' && (window as any).ethereum) {
     console.log('[Wallet] Using window.ethereum provider')
     return (window as any).ethereum as EIP1193Provider

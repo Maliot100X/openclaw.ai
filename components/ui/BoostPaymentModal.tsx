@@ -116,20 +116,23 @@ export default function BoostPaymentModal({
   }, [isOpen])
 
   const getProvider = async () => {
-    // Try Farcaster SDK first (for Mini App)
+    // STRICT ISOLATION: Farcaster Mini App must ONLY use SDK provider
     if (environment === 'farcaster') {
       try {
         const provider = await sdk.wallet.ethProvider
         if (provider) {
-          console.log('[Boost] Using Farcaster wallet provider')
+          console.log('[Boost] Using Farcaster SDK provider')
           return provider
         }
+        console.warn('[Boost] Farcaster SDK provider missing')
+        return null // DO NOT fall back to window.ethereum
       } catch (e) {
-        console.log('[Boost] Farcaster provider not available')
+        console.error('[Boost] Farcaster provider error:', e)
+        return null
       }
     }
 
-    // Fallback to MetaMask/injected
+    // Web fallback
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       console.log('[Boost] Using window.ethereum provider')
       return (window as any).ethereum

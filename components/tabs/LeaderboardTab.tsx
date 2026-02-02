@@ -52,7 +52,7 @@ export default function LeaderboardTab() {
   const [message, setMessage] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
-  
+
   // User's own data
   const [userRank, setUserRank] = useState<number | null>(null)
   const [userBoosts, setUserBoosts] = useState(0)
@@ -63,12 +63,26 @@ export default function LeaderboardTab() {
   // Load user data
   useEffect(() => {
     const loadUserData = async () => {
-      // Load points from tasks
-      const savedTasks = localStorage.getItem('clawai_tasks_v2')
-      if (savedTasks) {
-        const data = JSON.parse(savedTasks)
-        setUserPoints(data.points || 0)
-      }
+      // Get Farcaster user first
+      try {
+        const context = await sdk.context
+        if (context?.user) {
+          const user = context.user as any
+          setUserFid(user.fid)
+          setUsername(user.username)
+
+          // Load points from API (Real Persistence)
+          try {
+            const res = await fetch(`/api/tasks?fid=${user.fid}`)
+            const data = await res.json()
+            if (data.success) {
+              setUserPoints(data.points || 0)
+            }
+          } catch (e) {
+            console.error('Error fetching points:', e)
+          }
+        }
+      } catch { }
 
       // Load boosts
       const savedBoosts = localStorage.getItem('clawai_purchased_boosts')
@@ -76,20 +90,22 @@ export default function LeaderboardTab() {
         const boosts = JSON.parse(savedBoosts)
         setUserBoosts(boosts.filter((b: any) => b.used).length)
       }
-
-      // Get Farcaster user
-      try {
-        const context = await sdk.context
-        if (context?.user) {
-          const user = context.user as any
-          setUserFid(user.fid)
-          setUsername(user.username)
-        }
-      } catch {}
     }
 
     loadUserData()
   }, [])
+
+  // Refetch points when fid changes
+  useEffect(() => {
+    if (userFid) {
+      fetch(`/api/tasks?fid=${userFid}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setUserPoints(data.points || 0)
+        })
+        .catch(console.error)
+    }
+  }, [userFid])
 
   // Fetch leaderboard data
   const fetchLeaderboard = useCallback(async () => {
@@ -97,13 +113,13 @@ export default function LeaderboardTab() {
     try {
       const res = await fetch(`/api/leaderboard?type=${activeType}&period=${activePeriod}`)
       const data = await res.json()
-      
+
       if (data.success) {
         if (activeType === 'boosted_coins') {
           setCoinLeaderboard(data.leaderboard || [])
         } else {
           setBuyerLeaderboard(data.leaderboard || [])
-          
+
           // Find user's rank
           if (userFid && data.leaderboard) {
             const userEntry = data.leaderboard.find((e: BuyerLeaderboardItem) => e.fid === userFid)
@@ -260,11 +276,10 @@ export default function LeaderboardTab() {
             <button
               key={type.id}
               onClick={() => setActiveType(type.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${
-                isActive
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${isActive
                   ? 'bg-claw-primary text-white'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
+                }`}
             >
               <Icon size={18} />
               <span>{type.label}</span>
@@ -279,11 +294,10 @@ export default function LeaderboardTab() {
           <button
             key={period.id}
             onClick={() => setActivePeriod(period.id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activePeriod === period.id
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${activePeriod === period.id
                 ? 'bg-claw-secondary text-white'
                 : 'bg-white/5 text-gray-400 hover:text-white'
-            }`}
+              }`}
           >
             {period.label}
           </button>

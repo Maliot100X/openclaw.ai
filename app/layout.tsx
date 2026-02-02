@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import "@/lib/sdk-init"; // CRITICAL: Fire readiness signal before ANY React hydration
 import "./globals.css";
 import { Providers } from "./providers";
 

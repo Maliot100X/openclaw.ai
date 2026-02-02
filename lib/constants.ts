@@ -9,7 +9,9 @@ export const CHAINS = {
   BASE: {
     id: 8453,
     name: 'Base',
-    rpc: process.env.BASE_RPC || 'https://mainnet.base.org',
+    rpc: (process.env.BASE_RPC_USER && process.env.BASE_RPC_PASS)
+      ? `https://${process.env.BASE_RPC_USER}:${process.env.BASE_RPC_PASS}@${process.env.BASE_RPC!.replace('https://', '')}`
+      : process.env.BASE_RPC!, // Strict enforcement
     wss: process.env.BASE_WSS,
     explorer: 'https://basescan.org',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
