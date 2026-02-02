@@ -166,7 +166,7 @@ export default function ProfileTab() {
         }
       }
 
-      const holdings: TokenHolding[] = [{ symbol: 'ETH', name: 'Ethereum (Base)', balance: 'Loading...', value: 0, isAppCoin: false }]
+      const holdings: TokenHolding[] = [{ symbol: 'ETH', name: 'Ethereum (Base)', balance: '0.00', value: 0, isAppCoin: false }]
       const appCoins = localStorage.getItem('clawai_boosted_coins')
       if (appCoins) {
         JSON.parse(appCoins).forEach((coin: any) => {
@@ -196,77 +196,58 @@ export default function ProfileTab() {
         if (provider) {
           const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[]
           if (accounts?.length > 0) {
+            // Attempt to switch to Base, but don't block connection if it fails (user can switch later)
             try {
-              // Strict Base Mainnet enforcement (8453 = 0x2105)
               const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
               await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] })
             } catch (e: any) {
+              console.warn('[Profile] Failed to switch chain automatically:', e)
               if (e.code === 4902) {
-                const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
-                await provider.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: chainIdHex,
-                    chainName: CHAINS.BASE.name,
-                    nativeCurrency: CHAINS.BASE.nativeCurrency,
-                    rpcUrls: [CHAINS.BASE.rpc],
-                    blockExplorerUrls: [CHAINS.BASE.explorer]
-                  }],
-                })
+                // Try to add chain
+                try {
+                  await provider.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                      chainId: `0x${CHAINS.BASE.id.toString(16)}`,
+                      chainName: CHAINS.BASE.name,
+                      nativeCurrency: CHAINS.BASE.nativeCurrency,
+                      rpcUrls: [CHAINS.BASE.rpc],
+                      blockExplorerUrls: [CHAINS.BASE.explorer]
+                    }],
+                  })
+                } catch (addError) {
+                  console.warn('[Profile] Failed to add chain:', addError)
+                }
               }
             }
-            // SIGN-IN ENFORCEMENT
-            const message = `Sign in to ClawAI King Booster\nNonce: ${Date.now()}`
-            try {
-              await provider.request({
-                method: 'personal_sign',
-                params: [message, accounts[0]]
-              })
-              setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
-              await loadHoldings(accounts[0])
-            } catch (err) {
-              console.error('User rejected sign-in')
-              return
-            }
+
+            // Just connect! No signing required just to view profile
+            setWallets(prev => {
+              const others = prev.filter(w => w.type !== 'base')
+              return [...others, { address: accounts[0], type: 'base', connected: true }]
+            })
+            await loadHoldings(accounts[0])
           }
         }
       } else {
         const ethereum = (window as any).ethereum
         if (ethereum) {
           const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
+
+          // Try switch to Base
           try {
             const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
             await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] })
           } catch (e: any) {
-            if (e.code === 4902) {
-              const chainIdHex = `0x${CHAINS.BASE.id.toString(16)}`
-              await ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: chainIdHex,
-                  chainName: CHAINS.BASE.name,
-                  nativeCurrency: CHAINS.BASE.nativeCurrency,
-                  rpcUrls: [CHAINS.BASE.rpc],
-                  blockExplorerUrls: [CHAINS.BASE.explorer]
-                }],
-              })
-            }
+            console.warn('[Profile] Failed to switch chain:', e)
           }
+
           if (accounts?.length > 0) {
-            // SIGN-IN ENFORCEMENT
-            const message = `Sign in to ClawAI King Booster\nNonce: ${Date.now()}`
-            try {
-              await ethereum.request({
-                method: 'personal_sign',
-                params: [message, accounts[0]]
-              })
-              // Only set connected if signed
-              setWallets(prev => [...prev.filter(w => w.type !== 'base'), { address: accounts[0], type: 'base', connected: true }])
-              await loadHoldings(accounts[0])
-            } catch (err) {
-              console.error('User rejected sign-in')
-              return // Stop connection if rejected
-            }
+            setWallets(prev => {
+              const others = prev.filter(w => w.type !== 'base')
+              return [...others, { address: accounts[0], type: 'base', connected: true }]
+            })
+            await loadHoldings(accounts[0])
           }
         } else {
           window.open('https://metamask.io/download/', '_blank')
@@ -274,7 +255,10 @@ export default function ProfileTab() {
       }
     } catch (error: any) {
       console.error('[Profile] Failed to connect Base wallet:', error)
-      alert(error.code === 4001 ? 'Connection rejected.' : 'Failed to connect wallet: ' + (error.message || 'Unknown error'))
+      // Only alert if it's not a user rejection
+      if (error.code !== 4001) {
+        // alert('Failed to connect wallet: ' + (error.message || 'Unknown error'))
+      }
     } finally {
       setIsConnecting(null)
     }
